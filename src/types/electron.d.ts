@@ -1,5 +1,7 @@
 export interface ElectronAPI {
-  startAntScan: () => Promise<{ success: boolean; error?: string }>;
+  startAntScan: (options?: {
+    mockMode: boolean;
+  }) => Promise<{ success: boolean; error?: string; mock?: boolean }>;
   stopAntScan: () => Promise<{ success: boolean; error?: string }>;
   getDevices: () => Promise<HeartRateDevice[]>;
   onHeartRateUpdate: (callback: (data: HeartRateData) => void) => void;
