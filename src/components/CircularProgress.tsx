@@ -9,8 +9,8 @@ interface CircularProgressProps {
 
 export const CircularProgress: React.FC<CircularProgressProps> = ({
   percentage,
-  size = 80,
-  strokeWidth = 3,
+  size = 160,
+  strokeWidth = 10,
   color = "#ef4444" // red-500
 }) => {
   const radius = (size - strokeWidth) / 2;
@@ -18,6 +18,7 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
   const offset = circumference - (percentage / 100) * circumference;
   const colorMap: { [key: string]: string } = {
     "text-blue-400": "#60a5fa",
+    "text-blue-700": "#1d4ed8",
     "text-green-400": "#4ade80",
     "text-orange-400": "#fb923c",
     "text-red-400": "#f87171"
@@ -26,7 +27,7 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
   const mappedColor = colorMap[color] || color;
 
   return (
-    <div className="relative inline-flex items-center justify-center w-24 h-24">
+    <div className="relative inline-flex items-center justify-center w-40 h-40">
       <svg
         className="transform -rotate-90 w-full h-full"
         viewBox={`0 0 ${size} ${size}`}
@@ -56,10 +57,9 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
         />
       </svg>
       <div className="absolute flex flex-col items-center justify-center">
-        <span className="text-base font-medium text-white whitespace-nowrap">
+        <span className="text-4xl font-bold text-white whitespace-nowrap">
           {Math.round(percentage)}%
         </span>
-        <span className="text-[10px] text-gray-400 whitespace-nowrap">of max</span>
       </div>
     </div>
   );

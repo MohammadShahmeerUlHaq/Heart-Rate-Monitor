@@ -16,7 +16,8 @@ export interface HeartRateDevice {
   lastUpdate: Date;
   connected: boolean;
   calories: number;
-  zone: number;
+  bluePoints: number;
+  gender: "male" | "female";
 }
 
 export interface HeartRateData {
@@ -25,8 +26,11 @@ export interface HeartRateData {
   timestamp: Date;
 }
 
+import { CalorieCalculationParams } from "../utils/calorieCalculator";
+
 declare global {
   interface Window {
     electronAPI: ElectronAPI;
+    calculateCalories: (params: CalorieCalculationParams) => number;
   }
 }

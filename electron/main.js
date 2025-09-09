@@ -134,10 +134,9 @@ class Application {
   }
 
   setupIpcHandlers() {
-    ipcMain.handle("start-ant-scan", async (event, options = {}) => {
+    ipcMain.handle("start-ant-scan", async (_, options = {}) => {
       try {
-        // options.mockMode: boolean
-        const isMock = !!options.mockMode;
+        const isMock = true;
         if (!this.antPlusService) {
           this.antPlusService = new AntPlusService({ mockMode: isMock });
           this.setupAntPlusListeners();
@@ -149,7 +148,7 @@ class Application {
             this.setupAntPlusListeners();
           }
         }
-        const result = await this.antPlusService.startScanning();
+        await this.antPlusService.startScanning();
         return { success: true, mock: isMock };
       } catch (error) {
         console.error("Failed to start ANT+ scanning:", error);

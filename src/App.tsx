@@ -1,15 +1,19 @@
-import React, { useState, useEffect } from "react";
-import { HeartRateDevice, HeartRateData } from "./types/electron";
-import { Dashboard } from "./components/Dashboard";
-import { Settings } from "./components/Settings";
+import { useState, useEffect } from "react";
 import { Header } from "./components/Header";
+import { Settings } from "./components/Settings";
+import { Dashboard } from "./components/Dashboard";
 import { ConnectionStatus } from "./components/ConnectionStatus";
+import { HeartRateDevice, HeartRateData } from "./types/electron";
+import { calculateCalories } from "./utils/calorieCalculator";
+
+// Make calculateCalories available globally
+window.calculateCalories = calculateCalories;
 
 function App() {
   const [devices, setDevices] = useState<HeartRateDevice[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
-  const [tilesPerRow, setTilesPerRow] = useState(4);
+
   const [connectionStatus, setConnectionStatus] = useState<
     "disconnected" | "connecting" | "connected"
   >("disconnected");
@@ -19,16 +23,48 @@ function App() {
     if (window.electronAPI) {
       window.electronAPI.onHeartRateUpdate((data: HeartRateData) => {
         setDevices((prev) =>
-          prev.map((device) =>
-            device.id === data.deviceId
-              ? {
-                  ...device,
+          prev.map((device) => {
+            if (device.id !== data.deviceId) return device;
+
+            const settings = JSON.parse(localStorage.getItem("participantSettings") || "{}")[
+              device.id
+            ];
+
+            // Ensure timestamps are properly handled as Date objects
+            const currentTimestamp = new Date(data.timestamp);
+            const lastUpdate = device.lastUpdate ? new Date(device.lastUpdate) : currentTimestamp;
+            const timeDiffMinutes =
+              (currentTimestamp.getTime() - lastUpdate.getTime()) / (1000 * 60);
+
+            // Initialize values, ensuring they're numbers
+            let newCalories = typeof device.calories === "number" ? device.calories : 0;
+            let newBluePoints = typeof device.bluePoints === "number" ? device.bluePoints : 0;
+
+            // Only calculate if there's a valid time difference
+            if (timeDiffMinutes > 0) {
+              if (settings?.age && settings?.weight) {
+                const caloriesPerMinute = window.calculateCalories({
                   heartRate: data.heartRate,
-                  lastUpdate: data.timestamp,
-                  connected: true
-                }
-              : device
-          )
+                  weight: settings.weight,
+                  age: settings.age
+                });
+                newCalories += caloriesPerMinute * timeDiffMinutes;
+              }
+
+              if (data.heartRate > 150) {
+                newBluePoints += timeDiffMinutes;
+              }
+            }
+
+            return {
+              ...device,
+              connected: true,
+              calories: newCalories,
+              bluePoints: newBluePoints,
+              heartRate: data.heartRate,
+              lastUpdate: data.timestamp
+            };
+          })
         );
       });
 
@@ -38,7 +74,7 @@ function App() {
           if (existing) {
             return prev.map((d) => (d.id === device.id ? { ...d, connected: true } : d));
           }
-          return [...prev, device];
+          return [...prev, { ...device, gender: "male", calories: 0, bluePoints: 0 }];
         });
       });
 
@@ -50,18 +86,14 @@ function App() {
     }
 
     // Load saved settings
-    const savedTilesPerRow = localStorage.getItem("tilesPerRow");
-    if (savedTilesPerRow) {
-      setTilesPerRow(parseInt(savedTilesPerRow));
-    }
-
-    const savedDeviceNames = localStorage.getItem("deviceNames");
-    if (savedDeviceNames) {
-      const names = JSON.parse(savedDeviceNames);
+    const savedDeviceSettings = localStorage.getItem("deviceSettings");
+    if (savedDeviceSettings) {
+      const settings = JSON.parse(savedDeviceSettings);
       setDevices((prev) =>
         prev.map((device) => ({
           ...device,
-          name: names[device.id] || device.name
+          name: settings[device.id]?.name || device.name,
+          gender: settings[device.id]?.gender || "male"
         }))
       );
     }
@@ -92,22 +124,30 @@ function App() {
     await window.electronAPI.stopAntScan();
   };
 
-  const updateDeviceName = (deviceId: string, name: string) => {
-    setDevices((prev) =>
-      prev.map((device) => (device.id === deviceId ? { ...device, name } : device))
-    );
-
-    // Save to localStorage
-    const names = devices.reduce((acc, device) => {
-      acc[device.id] = device.id === deviceId ? name : device.name;
+  const saveDeviceSettings = (updatedDevices: HeartRateDevice[]) => {
+    const settings = updatedDevices.reduce((acc, device) => {
+      acc[device.id] = { name: device.name, gender: device.gender };
       return acc;
-    }, {} as Record<string, string>);
-    localStorage.setItem("deviceNames", JSON.stringify(names));
+    }, {} as Record<string, { name: string; gender: "male" | "female" }>);
+    localStorage.setItem("deviceSettings", JSON.stringify(settings));
   };
 
-  const updateTilesPerRow = (count: number) => {
-    setTilesPerRow(count);
-    localStorage.setItem("tilesPerRow", count.toString());
+  const updateDeviceName = (deviceId: string, name: string) => {
+    setDevices((prev) => {
+      const updated = prev.map((device) => (device.id === deviceId ? { ...device, name } : device));
+      saveDeviceSettings(updated);
+      return updated;
+    });
+  };
+
+  const updateDeviceGender = (deviceId: string, gender: "male" | "female") => {
+    setDevices((prev) => {
+      const updated = prev.map((device) =>
+        device.id === deviceId ? { ...device, gender } : device
+      );
+      saveDeviceSettings(updated);
+      return updated;
+    });
   };
 
   return (
@@ -128,13 +168,12 @@ function App() {
       {showSettings ? (
         <Settings
           devices={devices}
-          tilesPerRow={tilesPerRow}
           onUpdateDeviceName={updateDeviceName}
-          onUpdateTilesPerRow={updateTilesPerRow}
+          onUpdateDeviceGender={updateDeviceGender}
           onClose={() => setShowSettings(false)}
         />
       ) : (
-        <Dashboard devices={devices} tilesPerRow={tilesPerRow} />
+        <Dashboard devices={devices} />
       )}
     </div>
   );

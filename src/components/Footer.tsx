@@ -1,5 +1,5 @@
 import React from "react";
-import { Zap, Trophy, Clock } from "lucide-react";
+import { Zap, Snowflake, Clock } from "lucide-react";
 
 interface FooterProps {
   classBluePoints: number;
@@ -33,30 +33,27 @@ export const Footer: React.FC<FooterProps> = ({
         <div className="flex-1 flex items-center justify-center space-x-12">
           {/* Blue Points */}
           <div className="flex items-center">
-            <Trophy className="w-5 h-5 mr-2 text-blue-500" />
+            <Snowflake className="w-6 h-6 mr-3 text-blue-500" />
             <div>
               <div className="text-sm text-gray-400">Class Blue Points</div>
-              <div className="text-lg font-medium text-white">{classBluePoints}</div>
+              <div className="text-xl font-bold text-white">{classBluePoints}</div>
             </div>
           </div>
 
           {/* Calories */}
           <div className="flex items-center">
-            <Zap className="w-5 h-5 mr-2 text-yellow-500" />
+            <Zap className="w-6 h-6 mr-3 text-yellow-500" />
             <div>
               <div className="text-sm text-gray-400">Class Calories</div>
-              <div className="text-lg font-medium text-white">{classCalories}</div>
+              <div className="text-xl font-bold text-white">{classCalories}</div>
             </div>
           </div>
 
           {/* Coach */}
           <div className="flex items-center">
-            <div className="w-8 h-8 rounded-full bg-gray-700 mr-2 flex items-center justify-center">
-              <span className="text-sm font-medium text-white">{coachName.charAt(0)}</span>
-            </div>
             <div>
               <div className="text-sm text-gray-400">Coach</div>
-              <div className="text-lg font-medium text-white">{coachName}</div>
+              <div className="text-xl font-bold text-white">{coachName}</div>
             </div>
           </div>
         </div>
@@ -64,10 +61,10 @@ export const Footer: React.FC<FooterProps> = ({
         {/* Time - Right */}
         <div className="w-32 flex justify-end">
           <div className="flex items-center">
-            <Clock className="w-5 h-5 mr-2 text-gray-400" />
+            <Clock className="w-6 h-6 mr-3 text-gray-400" />
             <div>
               <div className="text-sm text-gray-400">Class Time</div>
-              <div className="text-lg font-medium text-white">{formatTime(classTime)}</div>
+              <div className="text-2xl font-bold text-white">{formatTime(classTime)}</div>
             </div>
           </div>
         </div>

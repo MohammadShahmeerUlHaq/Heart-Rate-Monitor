@@ -1,18 +1,18 @@
 const { EventEmitter } = require("events");
 
 class MockHRMService extends EventEmitter {
-  constructor(numParticipants = 8) {
+  constructor(numParticipants = 12) {
     super();
     this.participants = new Map();
     this.mockIntervals = new Map();
     this.baseHeartRates = new Map();
-    this.numParticipants = Math.min(8, Math.max(1, numParticipants));
+    this.numParticipants = Math.min(12, Math.max(1, numParticipants));
   }
 
   // Initialize a participant with a realistic base heart rate
   initializeParticipant(id) {
-    // Base heart rate between 60-160 BPM
-    const baseHeartRate = 60 + Math.floor(Math.random() * 100);
+    // Base heart rate between 80-160 BPM
+    const baseHeartRate = 80 + Math.floor(Math.random() * 80);
     this.baseHeartRates.set(id, baseHeartRate);
 
     return {
@@ -22,7 +22,8 @@ class MockHRMService extends EventEmitter {
       lastUpdate: new Date(),
       connected: true,
       calories: 0,
-      zone: this.calculateHeartRateZone(baseHeartRate)
+      bluePoints: 0,
+      gender: Math.random() > 0.5 ? "male" : "female"
     };
   }
 
@@ -63,16 +64,10 @@ class MockHRMService extends EventEmitter {
       const interval = setInterval(() => {
         const heartRate = this.generateHeartRate(id);
         const now = new Date();
-        const timeDiff = (now - participant.lastUpdate) / (1000 * 60); // minutes
 
         // Update participant data
         participant.heartRate = heartRate;
         participant.lastUpdate = now;
-        participant.zone = this.calculateHeartRateZone(heartRate);
-
-        // Calculate calories (simplified formula)
-        const caloriesPerMinute = this.calculateCaloriesPerMinute(heartRate);
-        participant.calories += caloriesPerMinute * timeDiff;
 
         // Emit heart rate update
         this.emit("heartRateData", {
@@ -96,21 +91,6 @@ class MockHRMService extends EventEmitter {
       participant.connected = false;
       this.emit("deviceDisconnected", id);
     });
-  }
-
-  calculateHeartRateZone(heartRate) {
-    if (heartRate < 100) return 1; // Warm-up (blue)
-    if (heartRate < 130) return 2; // Fat burn (green)
-    if (heartRate < 160) return 3; // Cardio (orange)
-    return 4; // Peak (red)
-  }
-
-  calculateCaloriesPerMinute(heartRate) {
-    // Basic calorie estimation
-    if (heartRate < 100) return 3;
-    if (heartRate < 130) return 6;
-    if (heartRate < 160) return 10;
-    return 15;
   }
 
   getDevices() {

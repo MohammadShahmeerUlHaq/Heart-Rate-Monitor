@@ -5,10 +5,9 @@ import { Footer } from "./Footer";
 
 interface DashboardProps {
   devices: HeartRateDevice[];
-  tilesPerRow: number;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ devices, tilesPerRow }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ devices }) => {
   const [classStartTime] = useState(Date.now());
   const [classStats, setClassStats] = useState({
     totalBluePoints: 0,
@@ -31,16 +30,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ devices, tilesPerRow }) =>
   // Update total calories and blue points whenever devices update
   useEffect(() => {
     const totalCalories = devices.reduce((sum, device) => sum + device.calories, 0);
-    const totalBluePoints = devices.reduce((sum, device) => {
-      // Simple blue points calculation - can be adjusted based on requirements
-      const points = device.connected ? Math.floor(device.calories / 10) : 0;
-      return sum + points;
-    }, 0);
+    const totalBluePoints = devices.reduce((sum, device) => sum + device.bluePoints, 0);
 
     setClassStats((prev) => ({
       ...prev,
-      totalBluePoints,
-      totalCalories: Math.round(totalCalories)
+      totalCalories: Math.round(totalCalories),
+      totalBluePoints: Math.round(totalBluePoints)
     }));
   }, [devices]);
 
@@ -58,20 +53,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ devices, tilesPerRow }) =>
     );
   }
 
-  const gridCols =
-    {
-      2: "grid-cols-2",
-      3: "grid-cols-3",
-      4: "grid-cols-4",
-      5: "grid-cols-5",
-      6: "grid-cols-6",
-      8: "grid-cols-8"
-    }[tilesPerRow] || "grid-cols-4";
-
   return (
     <>
       <div className="flex-1 p-6 pb-24">
-        <div className={`grid ${gridCols} gap-6 auto-rows-fr`}>
+        <div className="grid grid-cols-2 gap-8 auto-rows-fr">
           {devices.map((device) => (
             <HeartRateCard key={device.id} device={device} />
           ))}

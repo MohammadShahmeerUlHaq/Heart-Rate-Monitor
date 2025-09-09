@@ -1,5 +1,5 @@
-const { EventEmitter } = require("events");
 const Ant = require("ant-plus");
+const { EventEmitter } = require("events");
 const { MockHRMService } = require("./mock-hrm-service");
 
 class AntPlusService extends EventEmitter {
@@ -15,7 +15,7 @@ class AntPlusService extends EventEmitter {
     this.updateInterval = null;
     this.isShuttingDown = false;
     this.mockMode = mockMode;
-    this.mockService = mockMode ? new MockHRMService(8) : null;
+    this.mockService = mockMode ? new MockHRMService() : null;
   }
 
   async startScanning() {

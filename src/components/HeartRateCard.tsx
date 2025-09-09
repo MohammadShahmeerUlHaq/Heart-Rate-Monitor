@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Heart, Wifi, WifiOff, Zap, Trophy } from "lucide-react";
+import { Heart, Wifi, WifiOff, Zap, Snowflake } from "lucide-react";
 import { HeartRateDevice } from "../types/electron";
 import { ParticipantSettingsManager } from "../utils/participantSettings";
 import { CircularProgress } from "./CircularProgress";
@@ -8,27 +8,52 @@ interface HeartRateCardProps {
   device: HeartRateDevice;
 }
 
-const zoneColors = {
-  1: { bg: "bg-blue-500/20", border: "border-blue-500", text: "text-blue-400", name: "WARM UP" },
-  2: {
-    bg: "bg-green-500/20",
-    border: "border-green-500",
-    text: "text-green-400",
-    name: "FAT BURN"
-  },
-  3: {
-    bg: "bg-orange-500/20",
-    border: "border-orange-500",
-    text: "text-orange-400",
-    name: "CARDIO"
-  },
-  4: { bg: "bg-red-500/20", border: "border-red-500", text: "text-red-400", name: "PEAK" }
+const getZoneColors = (heartRate: number) => {
+  if (heartRate <= 120) {
+    return {
+      bg: "bg-green-500/20",
+      border: "border-green-500",
+      text: "text-green-400",
+      name: "GREEN ZONE"
+    };
+  } else if (heartRate <= 140) {
+    return {
+      bg: "bg-blue-500/20",
+      border: "border-blue-500",
+      text: "text-blue-400",
+      name: "BLUE ZONE"
+    };
+  } else if (heartRate <= 150) {
+    return {
+      bg: "bg-blue-800/20",
+      border: "border-blue-800",
+      text: "text-blue-700",
+      name: "DARK BLUE"
+    };
+  } else if (heartRate <= 160) {
+    return {
+      bg: "bg-orange-500/20",
+      border: "border-orange-500",
+      text: "text-orange-400",
+      name: "ORANGE"
+    };
+  } else {
+    return {
+      bg: "bg-red-500/20",
+      border: "border-red-500",
+      text: "text-red-400",
+      name: "RED ZONE"
+    };
+  }
 };
 
 export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device }) => {
   const [maxHeartRate, setMaxHeartRate] = useState(0);
-  const zone = zoneColors[device.zone as keyof typeof zoneColors] || zoneColors[1];
   const isStale = device.lastUpdate && Date.now() - device.lastUpdate.getTime() > 5000;
+  const zone =
+    device.connected && !isStale
+      ? getZoneColors(device.heartRate)
+      : { bg: "bg-gray-800", border: "border-gray-700", text: "text-gray-600" };
 
   useEffect(() => {
     // Load initial max heart rate
@@ -42,78 +67,76 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device }) => {
     }
   }, [device.heartRate, device.id]);
 
+  // No need for an empty useEffect as we're using App-level state
+
   return (
     <div
       className={`
-      relative rounded-xl border-[1px] transition-all duration-300 h-full bg-[#111927]
+      relative rounded-xl border-2 transition-all duration-300 h-full bg-[#111927]
       ${device.connected && !isStale ? zone.border : "border-gray-800"}
       ${device.connected && !isStale ? "shadow-lg" : "opacity-60"}
     `}
     >
       {/* Connection Status */}
-      <div className="absolute top-3 right-3">
+      <div className="absolute top-4 right-4">
         {device.connected && !isStale ? (
-          <Wifi className="w-4 h-4 text-green-400" />
+          <Wifi className="w-5 h-5 text-green-400" />
         ) : (
-          <WifiOff className="w-4 h-4 text-gray-500" />
+          <WifiOff className="w-5 h-5 text-gray-500" />
         )}
       </div>
 
       {/* Content Container */}
-      <div className="p-4 flex flex-col h-full">
+      <div className="p-6 flex flex-col h-full">
         {/* Participant Name */}
-        <div className="mb-4">
-          <h3 className="text-sm font-medium text-white truncate">{device.name}</h3>
-          {device.connected && !isStale && (
-            <span className={`text-xs font-medium ${zone.text} uppercase tracking-wide`}>
-              {zone.name}
-            </span>
-          )}
+        <div className="mb-6">
+          <h3 className="text-lg font-bold text-white truncate">{device.name}</h3>
         </div>
 
-        <div className="flex flex-1 items-start justify-between gap-4">
-          {/* Left Side Metrics */}
-          <div className="space-y-3">
+        <div className="flex-1 flex items-center justify-between gap-4">
+          {/* Stats Column */}
+          <div className="flex flex-col gap-6">
             {/* Heart Rate */}
-            <div className="flex items-center">
-              <Heart
-                className={`w-4 h-4 mr-2 flex-shrink-0 ${
-                  device.connected && !isStale && device.heartRate > 60
-                    ? "text-red-500 animate-pulse"
-                    : "text-gray-500"
-                }`}
-                fill={
-                  device.connected && !isStale && device.heartRate > 60 ? "currentColor" : "none"
-                }
-              />
-              <div>
-                <div className="text-base font-medium text-white">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-3">
+                <Heart
+                  className={`w-8 h-8 ${
+                    device.connected && !isStale && device.heartRate > 0
+                      ? `${zone.text} animate-pulse`
+                      : "text-gray-500"
+                  }`}
+                  fill={
+                    device.connected && !isStale && device.heartRate > 0 ? "currentColor" : "none"
+                  }
+                />
+                <div className="text-4xl font-bold text-white">
                   {device.connected && !isStale ? device.heartRate : "--"}
                 </div>
-                <div className="text-[10px] text-gray-400">BPM</div>
               </div>
             </div>
 
             {/* Calories */}
-            <div className="flex items-center">
-              <Zap className="w-4 h-4 mr-2 flex-shrink-0 text-yellow-500" />
-              <div>
-                <div className="text-base font-medium text-white">0</div>
-                <div className="text-[10px] text-gray-400">KCAL</div>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-3">
+                <Zap className="w-8 h-8 text-yellow-500" />
+                <div className="text-4xl font-bold text-white">
+                  {device.connected && !isStale ? Math.round(device.calories || 0) : "--"}
+                </div>
               </div>
             </div>
 
             {/* Blue Points */}
-            <div className="flex items-center">
-              <Trophy className="w-4 h-4 mr-2 flex-shrink-0 text-blue-500" />
-              <div>
-                <div className="text-base font-medium text-white">0</div>
-                <div className="text-[10px] text-gray-400">POINTS</div>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-3">
+                <Snowflake className="w-8 h-8 text-blue-500" />
+                <div className="text-4xl font-bold text-white">
+                  {device.connected && !isStale ? Math.round(device.bluePoints || 0) : "--"}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Right Side Circular Progress */}
+          {/* Circular Progress */}
           <div className="flex-shrink-0">
             {device.connected && !isStale ? (
               <CircularProgress
