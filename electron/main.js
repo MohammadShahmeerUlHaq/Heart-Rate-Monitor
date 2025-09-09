@@ -136,7 +136,7 @@ class Application {
   setupIpcHandlers() {
     ipcMain.handle("start-ant-scan", async (_, options = {}) => {
       try {
-        const isMock = true;
+        const isMock = false;
         if (!this.antPlusService) {
           this.antPlusService = new AntPlusService({ mockMode: isMock });
           this.setupAntPlusListeners();
@@ -183,6 +183,10 @@ class Application {
 
     ipcMain.handle("get-devices", () => {
       return this.antPlusService?.getDevices() || [];
+    });
+
+    ipcMain.handle('close-app', () => {
+      app.quit();
     });
 
     ipcMain.handle("update-device-name", (event, deviceId, name) => {

@@ -139,6 +139,10 @@ class Application {
       return this.antPlusService?.getDevices() || [];
     });
 
+    ipcMain.handle('close-app', () => {
+      app.quit();
+    });
+
     // Forward heart rate data to renderer
     if (this.antPlusService) {
       this.antPlusService.on("heartRateData", (data) => {

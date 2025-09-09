@@ -7,6 +7,7 @@ export interface ElectronAPI {
   onHeartRateUpdate: (callback: (data: any) => void) => void;
   onDeviceConnected: (callback: (device: any) => void) => void;
   onDeviceDisconnected: (callback: (deviceId: string) => void) => void;
+  closeApp: () => Promise<void>;
 }
 
 const electronAPI: ElectronAPI = {
@@ -21,7 +22,8 @@ const electronAPI: ElectronAPI = {
   },
   onDeviceDisconnected: (callback) => {
     ipcRenderer.on('device-disconnected', (_, deviceId) => callback(deviceId));
-  }
+  },
+  closeApp: () => ipcRenderer.invoke('close-app')
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

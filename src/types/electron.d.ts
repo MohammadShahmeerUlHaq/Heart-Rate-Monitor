@@ -7,6 +7,7 @@ export interface ElectronAPI {
   onHeartRateUpdate: (callback: (data: HeartRateData) => void) => void;
   onDeviceConnected: (callback: (device: HeartRateDevice) => void) => void;
   onDeviceDisconnected: (callback: (deviceId: string) => void) => void;
+  closeApp: () => Promise<void>;
 }
 
 export interface HeartRateDevice {

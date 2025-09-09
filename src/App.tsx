@@ -42,6 +42,8 @@ function App() {
 
             // Only calculate if there's a valid time difference
             if (timeDiffMinutes > 0) {
+              console.log("Hello", settings)
+              // console.log(settings?.age, settings?.weight)
               if (settings?.age && settings?.weight) {
                 const caloriesPerMinute = window.calculateCalories({
                   heartRate: data.heartRate,

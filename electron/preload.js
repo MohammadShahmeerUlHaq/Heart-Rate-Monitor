@@ -12,7 +12,8 @@ const electronAPI = {
   },
   onDeviceDisconnected: (callback) => {
     ipcRenderer.on("device-disconnected", (_, deviceId) => callback(deviceId));
-  }
+  },
+  closeApp: () => ipcRenderer.invoke('close-app')
 };
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);
