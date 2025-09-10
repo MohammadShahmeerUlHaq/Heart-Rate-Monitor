@@ -1,5 +1,6 @@
 import React from 'react';
-import { Settings, Play, Square, Heart, Users } from 'lucide-react';
+// import { Settings, Play, Square, Heart, Users } from 'lucide-react';
+import { Settings, Play, Square, Heart, Users, X } from 'lucide-react';
 
 interface HeaderProps {
   onToggleSettings: () => void;
@@ -18,8 +19,14 @@ export const Header: React.FC<HeaderProps> = ({
   deviceCount,
   connectedCount
 }) => {
+  const handleClose = async () => {
+    if (window.electronAPI) {
+      await window.electronAPI.closeApp();
+    }
+  };
   return (
-    <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
+    // <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
+    <header className="bg-gray-800 border-b border-gray-700 px-6 py-4 group relative">
       <div className="flex items-center justify-between">
         {/* Logo and Title */}
         <div className="flex items-center space-x-3">
@@ -75,6 +82,15 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Close Button - Only visible on hover */}
+      <button
+        onClick={handleClose}
+        className="absolute top-2 right-2 p-2 rounded-lg bg-red-500/80 hover:bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-all duration-200 z-10"
+        title="Close Application"
+      >
+        <X className="w-4 h-4" />
+      </button>
     </header>
   );
 };

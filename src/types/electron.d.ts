@@ -1,10 +1,13 @@
 export interface ElectronAPI {
-  startAntScan: () => Promise<{ success: boolean; error?: string }>;
+  startAntScan: (options?: {
+    mockMode: boolean;
+  }) => Promise<{ success: boolean; error?: string; mock?: boolean }>;
   stopAntScan: () => Promise<{ success: boolean; error?: string }>;
   getDevices: () => Promise<HeartRateDevice[]>;
   onHeartRateUpdate: (callback: (data: HeartRateData) => void) => void;
   onDeviceConnected: (callback: (device: HeartRateDevice) => void) => void;
   onDeviceDisconnected: (callback: (deviceId: string) => void) => void;
+  closeApp: () => Promise<void>;
 }
 
 export interface HeartRateDevice {
@@ -14,7 +17,8 @@ export interface HeartRateDevice {
   lastUpdate: Date;
   connected: boolean;
   calories: number;
-  zone: number;
+  bluePoints: number;
+  gender: "male" | "female";
 }
 
 export interface HeartRateData {
@@ -23,8 +27,11 @@ export interface HeartRateData {
   timestamp: Date;
 }
 
+import { CalorieCalculationParams } from "../utils/calorieCalculator";
+
 declare global {
   interface Window {
     electronAPI: ElectronAPI;
+    calculateCalories: (params: CalorieCalculationParams) => number;
   }
 }

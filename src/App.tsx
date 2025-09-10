@@ -1,133 +1,181 @@
-import React, { useState, useEffect } from 'react';
-import { HeartRateDevice, HeartRateData } from './types/electron';
-import { Dashboard } from './components/Dashboard';
-import { Settings } from './components/Settings';
-import { Header } from './components/Header';
-import { ConnectionStatus } from './components/ConnectionStatus';
+import { useState, useEffect } from "react";
+import { Header } from "./components/Header";
+import { Settings } from "./components/Settings";
+import { Dashboard } from "./components/Dashboard";
+import { ConnectionStatus } from "./components/ConnectionStatus";
+import { HeartRateDevice, HeartRateData } from "./types/electron";
+import { calculateCalories } from "./utils/calorieCalculator";
+
+// Make calculateCalories available globally
+window.calculateCalories = calculateCalories;
 
 function App() {
   const [devices, setDevices] = useState<HeartRateDevice[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
-  const [tilesPerRow, setTilesPerRow] = useState(4);
-  const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+
+  const [connectionStatus, setConnectionStatus] = useState<
+    "disconnected" | "connecting" | "connected"
+  >("disconnected");
 
   useEffect(() => {
     // Set up event listeners
     if (window.electronAPI) {
       window.electronAPI.onHeartRateUpdate((data: HeartRateData) => {
-        setDevices(prev => prev.map(device => 
-          device.id === data.deviceId 
-            ? { ...device, heartRate: data.heartRate, lastUpdate: data.timestamp, connected: true }
-            : device
-        ));
+        setDevices((prev) =>
+          prev.map((device) => {
+            if (device.id !== data.deviceId) return device;
+
+            const settings = JSON.parse(localStorage.getItem("participantSettings") || "{}")[
+              device.id
+            ];
+
+            // Ensure timestamps are properly handled as Date objects
+            const currentTimestamp = new Date(data.timestamp);
+            const lastUpdate = device.lastUpdate ? new Date(device.lastUpdate) : currentTimestamp;
+            const timeDiffMinutes =
+              (currentTimestamp.getTime() - lastUpdate.getTime()) / (1000 * 60);
+
+            // Initialize values, ensuring they're numbers
+            let newCalories = typeof device.calories === "number" ? device.calories : 0;
+            let newBluePoints = typeof device.bluePoints === "number" ? device.bluePoints : 0;
+
+            // Only calculate if there's a valid time difference
+            if (timeDiffMinutes > 0) {
+              console.log("Hello", settings)
+              // console.log(settings?.age, settings?.weight)
+              if (settings?.age && settings?.weight) {
+                const caloriesPerMinute = window.calculateCalories({
+                  heartRate: data.heartRate,
+                  weight: settings.weight,
+                  age: settings.age
+                });
+                newCalories += caloriesPerMinute * timeDiffMinutes;
+              }
+
+              if (data.heartRate > 150) {
+                newBluePoints += timeDiffMinutes;
+              }
+            }
+
+            return {
+              ...device,
+              connected: true,
+              calories: newCalories,
+              bluePoints: newBluePoints,
+              heartRate: data.heartRate,
+              lastUpdate: data.timestamp
+            };
+          })
+        );
       });
 
       window.electronAPI.onDeviceConnected((device: HeartRateDevice) => {
-        setDevices(prev => {
-          const existing = prev.find(d => d.id === device.id);
+        setDevices((prev) => {
+          const existing = prev.find((d) => d.id === device.id);
           if (existing) {
-            return prev.map(d => d.id === device.id ? { ...d, connected: true } : d);
+            return prev.map((d) => (d.id === device.id ? { ...d, connected: true } : d));
           }
-          return [...prev, device];
+          return [...prev, { ...device, gender: "male", calories: 0, bluePoints: 0 }];
         });
       });
 
       window.electronAPI.onDeviceDisconnected((deviceId: string) => {
-        setDevices(prev => prev.map(device => 
-          device.id === deviceId 
-            ? { ...device, connected: false }
-            : device
-        ));
+        setDevices((prev) =>
+          prev.map((device) => (device.id === deviceId ? { ...device, connected: false } : device))
+        );
       });
     }
 
     // Load saved settings
-    const savedTilesPerRow = localStorage.getItem('tilesPerRow');
-    if (savedTilesPerRow) {
-      setTilesPerRow(parseInt(savedTilesPerRow));
-    }
-
-    const savedDeviceNames = localStorage.getItem('deviceNames');
-    if (savedDeviceNames) {
-      const names = JSON.parse(savedDeviceNames);
-      setDevices(prev => prev.map(device => ({
-        ...device,
-        name: names[device.id] || device.name
-      })));
+    const savedDeviceSettings = localStorage.getItem("deviceSettings");
+    if (savedDeviceSettings) {
+      const settings = JSON.parse(savedDeviceSettings);
+      setDevices((prev) =>
+        prev.map((device) => ({
+          ...device,
+          name: settings[device.id]?.name || device.name,
+          gender: settings[device.id]?.gender || "male"
+        }))
+      );
     }
   }, []);
 
   const startScanning = async () => {
-    setConnectionStatus('connecting');
+    setConnectionStatus("connecting");
     setIsScanning(true);
     try {
-      const result = await window.electronAPI.startAntScan();
+      // Use mock mode if no real hardware is available
+      const result = await window.electronAPI.startAntScan({ mockMode: true });
       if (result.success) {
-        setConnectionStatus('connected');
+        setConnectionStatus("connected");
       } else {
-        setConnectionStatus('disconnected');
+        setConnectionStatus("disconnected");
         setIsScanning(false);
       }
     } catch (error) {
-      console.error('Failed to start scanning:', error);
-      setConnectionStatus('disconnected');
+      console.error("Failed to start scanning:", error);
+      setConnectionStatus("disconnected");
       setIsScanning(false);
     }
   };
 
   const stopScanning = async () => {
     setIsScanning(false);
-    setConnectionStatus('disconnected');
+    setConnectionStatus("disconnected");
     await window.electronAPI.stopAntScan();
   };
 
-  const updateDeviceName = (deviceId: string, name: string) => {
-    setDevices(prev => prev.map(device => 
-      device.id === deviceId ? { ...device, name } : device
-    ));
-
-    // Save to localStorage
-    const names = devices.reduce((acc, device) => {
-      acc[device.id] = device.id === deviceId ? name : device.name;
+  const saveDeviceSettings = (updatedDevices: HeartRateDevice[]) => {
+    const settings = updatedDevices.reduce((acc, device) => {
+      acc[device.id] = { name: device.name, gender: device.gender };
       return acc;
-    }, {} as Record<string, string>);
-    localStorage.setItem('deviceNames', JSON.stringify(names));
+    }, {} as Record<string, { name: string; gender: "male" | "female" }>);
+    localStorage.setItem("deviceSettings", JSON.stringify(settings));
   };
 
-  const updateTilesPerRow = (count: number) => {
-    setTilesPerRow(count);
-    localStorage.setItem('tilesPerRow', count.toString());
+  const updateDeviceName = (deviceId: string, name: string) => {
+    setDevices((prev) => {
+      const updated = prev.map((device) => (device.id === deviceId ? { ...device, name } : device));
+      saveDeviceSettings(updated);
+      return updated;
+    });
+  };
+
+  const updateDeviceGender = (deviceId: string, gender: "male" | "female") => {
+    setDevices((prev) => {
+      const updated = prev.map((device) =>
+        device.id === deviceId ? { ...device, gender } : device
+      );
+      saveDeviceSettings(updated);
+      return updated;
+    });
   };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       {!showSettings && (
-        <Header 
+        <Header
           onToggleSettings={() => setShowSettings(!showSettings)}
           isScanning={isScanning}
           onStartScanning={startScanning}
           onStopScanning={stopScanning}
           deviceCount={devices.length}
-          connectedCount={devices.filter(d => d.connected).length}
+          connectedCount={devices.filter((d) => d.connected).length}
         />
       )}
-      
+
       <ConnectionStatus status={connectionStatus} />
 
       {showSettings ? (
         <Settings
           devices={devices}
-          tilesPerRow={tilesPerRow}
           onUpdateDeviceName={updateDeviceName}
-          onUpdateTilesPerRow={updateTilesPerRow}
+          onUpdateDeviceGender={updateDeviceGender}
           onClose={() => setShowSettings(false)}
         />
       ) : (
-        <Dashboard 
-          devices={devices} 
-          tilesPerRow={tilesPerRow}
-        />
+        <Dashboard devices={devices} />
       )}
     </div>
   );
