@@ -5,6 +5,10 @@ import { Dashboard } from "./components/Dashboard";
 import { ConnectionStatus } from "./components/ConnectionStatus";
 import { HeartRateDevice, HeartRateData } from "./types/electron";
 import { calculateCalories } from "./utils/calorieCalculator";
+import { SessionManager } from "./utils/sessionManager";
+import { DatabaseService } from "./utils/database";
+import { EmailService } from "./utils/emailService";
+import { ChartGenerator } from "./utils/chartGenerator";
 
 // Make calculateCalories available globally
 window.calculateCalories = calculateCalories;
@@ -13,6 +17,7 @@ function App() {
   const [devices, setDevices] = useState<HeartRateDevice[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [isSessionActive, setIsSessionActive] = useState(false);
 
   const [connectionStatus, setConnectionStatus] = useState<
     "disconnected" | "connecting" | "connected"
@@ -152,6 +157,94 @@ function App() {
     });
   };
 
+  const validateUserSettings = (): { isValid: boolean; missingUsers: string[] } => {
+    const participantSettings = JSON.parse(localStorage.getItem("participantSettings") || "{}");
+    const missingUsers: string[] = [];
+
+    devices.forEach(device => {
+      const settings = participantSettings[device.id];
+      if (!settings || !settings.name || !settings.email || !settings.gender) {
+        missingUsers.push(device.name || `Device ${device.id}`);
+      }
+    });
+
+    return {
+      isValid: missingUsers.length === 0,
+      missingUsers
+    };
+  };
+
+  const handleStartSession = async () => {
+    const validation = validateUserSettings();
+    
+    if (!validation.isValid) {
+      alert(`Please complete settings for the following users:\n${validation.missingUsers.join('\n')}\n\nGo to Settings to add missing name, email, and gender information.`);
+      setShowSettings(true);
+      return;
+    }
+
+    try {
+      // Initialize database
+      await DatabaseService.initializeDatabase();
+      
+      // Start session
+      SessionManager.startSession(devices);
+      setIsSessionActive(true);
+      
+      console.log('Session started successfully');
+    } catch (error) {
+      console.error('Failed to start session:', error);
+      alert('Failed to start session. Please check your database connection.');
+    }
+  };
+
+  const handleStopSession = async () => {
+    try {
+      // Stop session and get data
+      const sessionEndTime = SessionManager.stopSession();
+      setIsSessionActive(false);
+      
+      if (!sessionEndTime) {
+        console.error('No session was active');
+        return;
+      }
+
+      // Get participant settings
+      const participantSettings = JSON.parse(localStorage.getItem("participantSettings") || "{}");
+      
+      // Generate session data for each user
+      const sessionDataArray = SessionManager.generateSessionData(devices, participantSettings);
+      
+      // Process each user's data
+      for (const sessionData of sessionDataArray) {
+        try {
+          // Save to database
+          const sessionId = await DatabaseService.saveSessionData(sessionData);
+          console.log(`Session data saved for ${sessionData.name} with ID: ${sessionId}`);
+          
+          // Generate chart
+          const chartImageBase64 = await ChartGenerator.generateSessionChart(sessionData);
+          
+          // Send email
+          await EmailService.sendSessionReport(sessionData, chartImageBase64);
+          console.log(`Email sent to ${sessionData.email}`);
+          
+        } catch (error) {
+          console.error(`Failed to process data for ${sessionData.name}:`, error);
+        }
+      }
+      
+      // Clear session data
+      SessionManager.clearSessionData();
+      
+      alert('Session completed! Data has been saved and emails have been sent to all participants.');
+      
+    } catch (error) {
+      console.error('Failed to stop session:', error);
+      alert('Failed to complete session processing. Some data may not have been saved.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       {!showSettings && (
@@ -175,7 +268,12 @@ function App() {
           onClose={() => setShowSettings(false)}
         />
       ) : (
-        <Dashboard devices={devices} />
+        <Dashboard 
+          devices={devices} 
+          isSessionActive={isSessionActive}
+          onStartSession={handleStartSession}
+          onStopSession={handleStopSession}
+        />
       )}
     </div>
   );

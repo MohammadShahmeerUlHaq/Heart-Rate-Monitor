@@ -5,6 +5,7 @@ import { HeartRateDevice } from "../types/electron";
 interface ParticipantSettings {
   name: string;
   gender: "male" | "female";
+  email: string;
   age: number;
   weight: number;
 }
@@ -12,11 +13,13 @@ interface ParticipantSettings {
 const defaultProfiles: Record<"male" | "female", Omit<ParticipantSettings, "name">> = {
   male: {
     gender: "male",
+    email: "",
     age: 40, // Average adult male age in US
     weight: 88.3 // Average adult male weight in kg in US
   },
   female: {
     gender: "female",
+    email: "",
     age: 40, // Average adult female age in US
     weight: 76.4 // Average adult female weight in kg in US
   }
@@ -42,6 +45,7 @@ export const Settings: React.FC<SettingsProps> = ({
       acc[device.id] = {
         name: device.name,
         gender,
+        email: "",
         age: defaultProfiles[gender].age,
         weight: defaultProfiles[gender].weight
       };
@@ -126,6 +130,18 @@ export const Settings: React.FC<SettingsProps> = ({
                         }
                         className="w-full bg-transparent border-b border-gray-600 hover:border-gray-500 focus:border-blue-500 text-white text-lg font-medium placeholder-gray-500 pb-2 focus:outline-none transition-colors"
                         placeholder="Enter participant name"
+                      />
+                      <input
+                        type="email"
+                        value={localSettings[device.id].email}
+                        onChange={(e) =>
+                          setLocalSettings((prev) => ({
+                            ...prev,
+                            [device.id]: { ...prev[device.id], email: e.target.value }
+                          }))
+                        }
+                        className="w-full bg-transparent border-b border-gray-600 hover:border-gray-500 focus:border-blue-500 text-white text-base placeholder-gray-500 pb-2 focus:outline-none transition-colors"
+                        placeholder="Enter email address"
                       />
                       <div className="flex items-center space-x-4">
                         <select

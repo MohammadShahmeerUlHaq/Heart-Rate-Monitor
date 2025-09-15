@@ -1,18 +1,24 @@
 import React from "react";
-import { Zap, Snowflake, Clock } from "lucide-react";
+import { Zap, Snowflake, Clock, Play, Square } from "lucide-react";
 
 interface FooterProps {
   classBluePoints: number;
   classCalories: number;
   coachName: string;
   classTime: number; // in seconds
+  isSessionActive: boolean;
+  onStartSession: () => void;
+  onStopSession: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
   classBluePoints = 0,
   classCalories = 0,
   coachName = "Jared",
-  classTime = 0
+  classTime = 0,
+  isSessionActive = false,
+  onStartSession,
+  onStopSession
 }) => {
   // Format time as mm:ss
   const formatTime = (seconds: number) => {
@@ -60,7 +66,31 @@ export const Footer: React.FC<FooterProps> = ({
 
         {/* Time - Right */}
         <div className="w-32 flex justify-end">
-          <div className="flex items-center">
+          <div className="flex items-center space-x-4">
+            {/* Session Control Button */}
+            <button
+              onClick={isSessionActive ? onStopSession : onStartSession}
+              className={`
+                flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors
+                ${isSessionActive 
+                  ? 'bg-red-500 hover:bg-red-600 text-white' 
+                  : 'bg-green-500 hover:bg-green-600 text-white'
+                }
+              `}
+            >
+              {isSessionActive ? (
+                <>
+                  <Square className="w-4 h-4" fill="currentColor" />
+                  <span>Stop</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4" fill="currentColor" />
+                  <span>Start</span>
+                </>
+              )}
+            </button>
+            
             <Clock className="w-6 h-6 mr-3 text-gray-400" />
             <div>
               <div className="text-sm text-gray-400">Class Time</div>

@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, Menu, dialog } = require("electron");
 const path = require("path");
 const { AntPlusService } = require("./antplus-service");
+const { APIHandlers } = require("./api-handlers");
 
 class Application {
   constructor() {
@@ -195,6 +196,39 @@ class Application {
         return { success: true };
       }
       return { success: false };
+    });
+
+    // API handlers for database, email, and chart generation
+    ipcMain.handle("api-database-init", async (event, data) => {
+      try {
+        return await APIHandlers.handleDatabaseInit(data.query);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    });
+
+    ipcMain.handle("api-database-insert", async (event, data) => {
+      try {
+        return await APIHandlers.handleDatabaseInsert(data.query, data.values);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    });
+
+    ipcMain.handle("api-email-send", async (event, emailData) => {
+      try {
+        return await APIHandlers.handleEmailSend(emailData);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    });
+
+    ipcMain.handle("api-chart-generate", async (event, chartData) => {
+      try {
+        return await APIHandlers.handleChartGeneration(chartData);
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
     });
   }
 

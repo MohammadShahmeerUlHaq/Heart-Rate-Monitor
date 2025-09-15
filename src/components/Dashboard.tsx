@@ -2,30 +2,48 @@ import React, { useState, useEffect } from "react";
 import { HeartRateDevice } from "../types/electron";
 import { HeartRateCard } from "./HeartRateCard";
 import { Footer } from "./Footer";
+import { SessionManager } from "../utils/sessionManager";
+import { UserSessionStats } from "../types/session";
 
 interface DashboardProps {
   devices: HeartRateDevice[];
+  isSessionActive: boolean;
+  onStartSession: () => void;
+  onStopSession: () => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ devices }) => {
-  const [classStartTime] = useState(Date.now());
+export const Dashboard: React.FC<DashboardProps> = ({ 
+  devices, 
+  isSessionActive, 
+  onStartSession, 
+  onStopSession 
+}) => {
+  const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
   const [classStats, setClassStats] = useState({
     totalBluePoints: 0,
     totalCalories: 0,
     elapsedTime: 0
   });
+  const [userStats, setUserStats] = useState<Map<string, UserSessionStats>>(new Map());
 
   // Update class time every second
   useEffect(() => {
     const timer = setInterval(() => {
-      setClassStats((prev) => ({
-        ...prev,
-        elapsedTime: Math.floor((Date.now() - classStartTime) / 1000)
-      }));
+      if (isSessionActive) {
+        const duration = SessionManager.getSessionDuration();
+        setClassStats((prev) => ({
+          ...prev,
+          elapsedTime: duration
+        }));
+        
+        // Update user stats during session
+        const stats = SessionManager.calculateUserStats(devices);
+        setUserStats(stats);
+      }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [classStartTime]);
+  }, [isSessionActive, devices]);
 
   // Update total calories and blue points whenever devices update
   useEffect(() => {
@@ -58,7 +76,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ devices }) => {
       <div className="flex-1 p-6 pb-24">
         <div className="grid grid-cols-2 gap-8 auto-rows-fr">
           {devices.map((device) => (
-            <HeartRateCard key={device.id} device={device} />
+            <HeartRateCard 
+              key={device.id} 
+              device={device} 
+              sessionStats={userStats.get(device.id)}
+            />
           ))}
         </div>
       </div>
@@ -68,6 +90,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ devices }) => {
         classCalories={classStats.totalCalories}
         coachName="Jared"
         classTime={classStats.elapsedTime}
+        isSessionActive={isSessionActive}
+        onStartSession={onStartSession}
+        onStopSession={onStopSession}
       />
     </>
   );

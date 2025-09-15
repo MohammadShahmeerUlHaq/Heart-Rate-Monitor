@@ -3,9 +3,11 @@ import { Heart, Wifi, WifiOff, Zap, Snowflake } from "lucide-react";
 import { HeartRateDevice } from "../types/electron";
 import { ParticipantSettingsManager } from "../utils/participantSettings";
 import { CircularProgress } from "./CircularProgress";
+import { UserSessionStats } from "../types/session";
 
 interface HeartRateCardProps {
   device: HeartRateDevice;
+  sessionStats?: UserSessionStats;
 }
 
 const getZoneColors = (heartRate: number) => {
@@ -47,7 +49,7 @@ const getZoneColors = (heartRate: number) => {
   }
 };
 
-export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device }) => {
+export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionStats }) => {
   const [maxHeartRate, setMaxHeartRate] = useState(0);
   const isStale = device.lastUpdate && Date.now() - device.lastUpdate.getTime() > 5000;
   const zone =
@@ -120,7 +122,7 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device }) => {
               <div className="flex items-center gap-3">
                 <Zap className="w-8 h-8 text-yellow-500" />
                 <div className="text-4xl font-bold text-white">
-                  {device.connected && !isStale ? Math.round(device.calories || 0) : "--"}
+                  {device.connected && !isStale ? Math.round(sessionStats?.totalCalories || device.calories || 0) : "--"}
                 </div>
               </div>
             </div>
@@ -130,9 +132,31 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device }) => {
               <div className="flex items-center gap-3">
                 <Snowflake className="w-8 h-8 text-blue-500" />
                 <div className="text-4xl font-bold text-white">
-                  {device.connected && !isStale ? Math.round(device.bluePoints || 0) : "--"}
+                  {device.connected && !isStale ? Math.round(sessionStats?.totalBluePoints || device.bluePoints || 0) : "--"}
                 </div>
               </div>
+            </div>
+
+            {/* Average Heart Rate */}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-3">
+                <Heart className="w-6 h-6 text-blue-400" />
+                <div className="text-2xl font-bold text-white">
+                  {device.connected && !isStale && sessionStats ? Math.round(sessionStats.averageHeartRate) : "--"}
+                </div>
+              </div>
+              <div className="text-xs text-gray-400 ml-9">AVG HR</div>
+            </div>
+
+            {/* Max Heart Rate */}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-3">
+                <Heart className="w-6 h-6 text-red-400" />
+                <div className="text-2xl font-bold text-white">
+                  {device.connected && !isStale && sessionStats ? sessionStats.maxHeartRate : "--"}
+                </div>
+              </div>
+              <div className="text-xs text-gray-400 ml-9">MAX HR</div>
             </div>
           </div>
 
