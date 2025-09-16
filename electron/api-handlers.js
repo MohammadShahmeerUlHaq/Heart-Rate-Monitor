@@ -11,10 +11,10 @@ const pool = new Pool({
 });
 
 // Email configuration
-const emailTransporter = nodemailer.createTransporter({
+const emailTransporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'heartratemonitor@gmail.com',
+    user: 'contact.healthmate@gmail.com',
     pass: 'puiprcgewpajyniu'
   }
 });

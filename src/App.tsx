@@ -27,8 +27,8 @@ function App() {
     // Set up event listeners
     if (window.electronAPI) {
       window.electronAPI.onHeartRateUpdate((data: HeartRateData) => {
-        setDevices((prev) =>
-          prev.map((device) => {
+        setDevices((prev) => {
+          const updated = prev.map((device) => {
             if (device.id !== data.deviceId) return device;
 
             const settings = JSON.parse(localStorage.getItem("participantSettings") || "{}")[
@@ -45,9 +45,9 @@ function App() {
             let newCalories = typeof device.calories === "number" ? device.calories : 0;
             let newBluePoints = typeof device.bluePoints === "number" ? device.bluePoints : 0;
 
-            // Only calculate if there's a valid time difference
-            if (timeDiffMinutes > 0) {
-              console.log("Hello", settings)
+            // Only calculate if there's a valid time difference AND session is active
+            if (timeDiffMinutes > 0 && SessionManager.isSessionActive()) {
+              // console.log("Hello", settings)
               // console.log(settings?.age, settings?.weight)
               if (settings?.age && settings?.weight) {
                 const caloriesPerMinute = window.calculateCalories({
@@ -69,26 +69,46 @@ function App() {
               calories: newCalories,
               bluePoints: newBluePoints,
               heartRate: data.heartRate,
-              lastUpdate: data.timestamp
+              lastUpdate: new Date(data.timestamp)
             };
-          })
-        );
+          });
+          
+          // Update SessionManager with current devices if session is active
+          if (SessionManager.isSessionActive()) {
+            SessionManager.updateCurrentDevices(updated);
+          }
+          
+          return updated;
+        });
       });
 
       window.electronAPI.onDeviceConnected((device: HeartRateDevice) => {
         setDevices((prev) => {
           const existing = prev.find((d) => d.id === device.id);
-          if (existing) {
-            return prev.map((d) => (d.id === device.id ? { ...d, connected: true } : d));
+          const updated = existing
+            ? prev.map((d) => (d.id === device.id ? { ...d, connected: true } : d))
+            : [...prev, { ...device, gender: "male", calories: 0, bluePoints: 0 }];
+          
+          // Update SessionManager with current devices if session is active
+          if (SessionManager.isSessionActive()) {
+            SessionManager.updateCurrentDevices(updated);
           }
-          return [...prev, { ...device, gender: "male", calories: 0, bluePoints: 0 }];
+          
+          return updated;
         });
       });
 
       window.electronAPI.onDeviceDisconnected((deviceId: string) => {
-        setDevices((prev) =>
-          prev.map((device) => (device.id === deviceId ? { ...device, connected: false } : device))
-        );
+        setDevices((prev) => {
+          const updated = prev.map((device) => (device.id === deviceId ? { ...device, connected: false } : device));
+          
+          // Update SessionManager with current devices if session is active
+          if (SessionManager.isSessionActive()) {
+            SessionManager.updateCurrentDevices(updated);
+          }
+          
+          return updated;
+        });
       });
     }
 
@@ -96,13 +116,20 @@ function App() {
     const savedDeviceSettings = localStorage.getItem("deviceSettings");
     if (savedDeviceSettings) {
       const settings = JSON.parse(savedDeviceSettings);
-      setDevices((prev) =>
-        prev.map((device) => ({
+      setDevices((prev) => {
+        const updated = prev.map((device) => ({
           ...device,
           name: settings[device.id]?.name || device.name,
           gender: settings[device.id]?.gender || "male"
-        }))
-      );
+        }));
+        
+        // Update SessionManager with current devices if session is active
+        if (SessionManager.isSessionActive()) {
+          SessionManager.updateCurrentDevices(updated);
+        }
+        
+        return updated;
+      });
     }
   }, []);
 
@@ -143,6 +170,12 @@ function App() {
     setDevices((prev) => {
       const updated = prev.map((device) => (device.id === deviceId ? { ...device, name } : device));
       saveDeviceSettings(updated);
+      
+      // Update SessionManager with current devices if session is active
+      if (SessionManager.isSessionActive()) {
+        SessionManager.updateCurrentDevices(updated);
+      }
+      
       return updated;
     });
   };
@@ -153,6 +186,12 @@ function App() {
         device.id === deviceId ? { ...device, gender } : device
       );
       saveDeviceSettings(updated);
+      
+      // Update SessionManager with current devices if session is active
+      if (SessionManager.isSessionActive()) {
+        SessionManager.updateCurrentDevices(updated);
+      }
+      
       return updated;
     });
   };
@@ -188,6 +227,8 @@ function App() {
       await DatabaseService.initializeDatabase();
       
       // Start session
+      // Reset per-device counters before starting
+      setDevices((prev) => prev.map((d) => ({ ...d, calories: 0, bluePoints: 0 })));
       SessionManager.startSession(devices);
       setIsSessionActive(true);
       

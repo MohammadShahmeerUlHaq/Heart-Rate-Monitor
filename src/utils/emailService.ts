@@ -21,13 +21,13 @@ export class EmailService {
         ]
       };
 
-      const response = await fetch('/api/email/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(emailData)
-      });
+      // const response = await fetch('/api/email/send', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify(emailData)
+      // });
 
       // Use Electron IPC instead of fetch for API calls
       const response = await window.electronAPI.callAPI('email-send', emailData);

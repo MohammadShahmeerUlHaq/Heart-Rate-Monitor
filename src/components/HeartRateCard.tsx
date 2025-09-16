@@ -8,6 +8,7 @@ import { UserSessionStats } from "../types/session";
 interface HeartRateCardProps {
   device: HeartRateDevice;
   sessionStats?: UserSessionStats;
+  isSessionActive?: boolean;
 }
 
 const getZoneColors = (heartRate: number) => {
@@ -49,7 +50,7 @@ const getZoneColors = (heartRate: number) => {
   }
 };
 
-export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionStats }) => {
+export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionStats, isSessionActive = false }) => {
   const [maxHeartRate, setMaxHeartRate] = useState(0);
   const isStale = device.lastUpdate && Date.now() - device.lastUpdate.getTime() > 5000;
   const zone =
@@ -99,6 +100,7 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
           {/* Stats Column */}
           <div className="flex flex-col gap-6">
             {/* Heart Rate */}
+            {isSessionActive && (
             <div className="flex flex-col">
               <div className="flex items-center gap-3">
                 <Heart
@@ -112,10 +114,10 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
                   }
                 />
                 <div className="text-4xl font-bold text-white">
-                  {device.connected && !isStale ? device.heartRate : "--"}
+                  {device.connected && !isStale && isSessionActive ? device.heartRate : "--"}
                 </div>
               </div>
-            </div>
+            </div>)}
 
             {/* Calories */}
             <div className="flex flex-col">
@@ -137,32 +139,37 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
               </div>
             </div>
 
-            {/* Average Heart Rate */}
-            <div className="flex flex-col">
-              <div className="flex items-center gap-3">
-                <Heart className="w-6 h-6 text-blue-400" />
-                <div className="text-2xl font-bold text-white">
-                  {device.connected && !isStale && sessionStats ? Math.round(sessionStats.averageHeartRate) : "--"}
+            {/* Average Heart Rate - Only show when session is not active */}
+            {!isSessionActive && (
+              <div className="flex flex-col">
+                <div className="flex items-center gap-3">
+                  <Heart className="w-6 h-6 text-blue-400" />
+                  <div className="text-2xl font-bold text-white">
+                    {device.connected && !isStale && sessionStats ? Math.round(sessionStats.averageHeartRate) : "--"}
+                  </div>
                 </div>
+                <div className="text-xs text-gray-400 ml-9">AVG HR</div>
               </div>
-              <div className="text-xs text-gray-400 ml-9">AVG HR</div>
-            </div>
+            )}
 
-            {/* Max Heart Rate */}
-            <div className="flex flex-col">
-              <div className="flex items-center gap-3">
-                <Heart className="w-6 h-6 text-red-400" />
-                <div className="text-2xl font-bold text-white">
-                  {device.connected && !isStale && sessionStats ? sessionStats.maxHeartRate : "--"}
+            {/* Max Heart Rate - Only show when session is not active */}
+            {!isSessionActive && (
+              <div className="flex flex-col">
+                <div className="flex items-center gap-3">
+                  <Heart className="w-6 h-6 text-red-400" />
+                  <div className="text-2xl font-bold text-white">
+                    {device.connected && !isStale && sessionStats ? sessionStats.maxHeartRate : "--"}
+                  </div>
                 </div>
+                <div className="text-xs text-gray-400 ml-9">MAX HR</div>
               </div>
-              <div className="text-xs text-gray-400 ml-9">MAX HR</div>
-            </div>
+            )}
           </div>
 
           {/* Circular Progress */}
+          {isSessionActive && (
           <div className="flex-shrink-0">
-            {device.connected && !isStale ? (
+            {device.connected && !isStale && isSessionActive ? (
               <CircularProgress
                 percentage={
                   maxHeartRate > 0 ? Math.round((device.heartRate / maxHeartRate) * 100) : 0
@@ -173,6 +180,7 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
               <CircularProgress percentage={0} color="#374151" />
             )}
           </div>
+          )}
         </div>
       </div>
 

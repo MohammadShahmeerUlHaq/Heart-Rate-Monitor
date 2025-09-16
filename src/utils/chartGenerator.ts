@@ -9,13 +9,13 @@ export class ChartGenerator {
         height: 600
       };
 
-      const response = await fetch('/api/chart/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(chartData)
-      });
+      // const response = await fetch('/api/chart/generate', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify(chartData)
+      // });
 
       // Use Electron IPC instead of fetch for API calls
       const response = await window.electronAPI.callAPI('chart-generate', chartData);
