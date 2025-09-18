@@ -4,6 +4,7 @@ import { Settings } from "./components/Settings";
 import { Dashboard } from "./components/Dashboard";
 import { ConnectionStatus } from "./components/ConnectionStatus";
 import { HeartRateDevice, HeartRateData } from "./types/electron";
+import { UserSessionStats } from "./types/session";
 import { calculateCalories } from "./utils/calorieCalculator";
 import { SessionManager } from "./utils/sessionManager";
 import { DatabaseService } from "./utils/database";
@@ -18,6 +19,7 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false);
+  const [finalUserStats, setFinalUserStats] = useState<Map<string, UserSessionStats> | null>(null);
 
   const [connectionStatus, setConnectionStatus] = useState<
     "disconnected" | "connecting" | "connected"
@@ -231,6 +233,7 @@ function App() {
       setDevices((prev) => prev.map((d) => ({ ...d, calories: 0, bluePoints: 0 })));
       SessionManager.startSession(devices);
       setIsSessionActive(true);
+      setFinalUserStats(null);
       
       console.log('Session started successfully');
     } catch (error) {
@@ -255,6 +258,9 @@ function App() {
       
       // Generate session data for each user
       const sessionDataArray = SessionManager.generateSessionData(devices, participantSettings);
+      // Snapshot final per-user stats for on-screen summary before clearing
+      const snapshotStats = SessionManager.calculateUserStats(devices);
+      setFinalUserStats(snapshotStats);
       
       // Process each user's data
       for (const sessionData of sessionDataArray) {
@@ -314,6 +320,7 @@ function App() {
           isSessionActive={isSessionActive}
           onStartSession={handleStartSession}
           onStopSession={handleStopSession}
+          finalUserStats={finalUserStats}
         />
       )}
     </div>

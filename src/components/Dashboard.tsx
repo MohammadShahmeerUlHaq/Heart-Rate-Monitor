@@ -10,13 +10,15 @@ interface DashboardProps {
   isSessionActive: boolean;
   onStartSession: () => void;
   onStopSession: () => void;
+  finalUserStats?: Map<string, UserSessionStats> | null;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
   devices, 
   isSessionActive, 
   onStartSession, 
-  onStopSession 
+  onStopSession,
+  finalUserStats
 }) => {
   // const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
   const [classStats, setClassStats] = useState({
@@ -64,13 +66,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }));
   }, [devices, isSessionActive]);
 
-  // When session stops, compute final userStats one last time so UI can show avg/max
+  // When session stops, prefer the snapshot passed from App if available
   useEffect(() => {
     if (!isSessionActive) {
-      const stats = SessionManager.calculateUserStats(devices);
-      setUserStats(stats);
+      if (finalUserStats) {
+        setUserStats(new Map(finalUserStats));
+      } else {
+        const stats = SessionManager.calculateUserStats(devices);
+        setUserStats(stats);
+      }
     }
-  }, [isSessionActive, devices]);
+  }, [isSessionActive, devices, finalUserStats]);
 
   if (devices.length === 0) {
     return (
