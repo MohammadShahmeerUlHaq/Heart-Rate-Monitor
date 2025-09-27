@@ -10,15 +10,17 @@ interface DashboardProps {
   isSessionActive: boolean;
   onStartSession: () => void;
   onStopSession: () => void;
+  finalUserStats?: Map<string, UserSessionStats> | null;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
   devices, 
   isSessionActive, 
   onStartSession, 
-  onStopSession 
+  onStopSession,
+  finalUserStats
 }) => {
-  const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
+  // const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
   const [classStats, setClassStats] = useState({
     totalBluePoints: 0,
     totalCalories: 0,
@@ -26,36 +28,55 @@ export const Dashboard: React.FC<DashboardProps> = ({
   });
   const [userStats, setUserStats] = useState<Map<string, UserSessionStats>>(new Map());
 
-  // Update class time every second
+  // Update class time every second (independent of device changes)
   useEffect(() => {
     const timer = setInterval(() => {
-      if (isSessionActive) {
-        const duration = SessionManager.getSessionDuration();
-        setClassStats((prev) => ({
-          ...prev,
-          elapsedTime: duration
-        }));
-        
-        // Update user stats during session
-        const stats = SessionManager.calculateUserStats(devices);
-        setUserStats(stats);
-      }
+      const duration = SessionManager.getSessionDuration();
+      setClassStats((prev) => ({
+        ...prev,
+        elapsedTime: duration
+      }));
     }, 1000);
 
     return () => clearInterval(timer);
+  }, []);
+
+  // Update user stats periodically only while session is active
+  useEffect(() => {
+    if (!isSessionActive) return;
+    const update = () => {
+      const stats = SessionManager.calculateUserStats(devices);
+      setUserStats(stats);
+    };
+    update();
+    const timer = setInterval(update, 1000);
+    return () => clearInterval(timer);
   }, [isSessionActive, devices]);
 
-  // Update total calories and blue points whenever devices update
+  // Update total calories and blue points whenever devices update, but only during active session
   useEffect(() => {
-    const totalCalories = devices.reduce((sum, device) => sum + device.calories, 0);
-    const totalBluePoints = devices.reduce((sum, device) => sum + device.bluePoints, 0);
+    if (!isSessionActive) return;
+    const totalCalories = devices.reduce((sum, device) => sum + (device.calories || 0), 0);
+    const totalBluePoints = devices.reduce((sum, device) => sum + (device.bluePoints || 0), 0);
 
     setClassStats((prev) => ({
       ...prev,
       totalCalories: Math.round(totalCalories),
       totalBluePoints: Math.round(totalBluePoints)
     }));
-  }, [devices]);
+  }, [devices, isSessionActive]);
+
+  // When session stops, prefer the snapshot passed from App if available
+  useEffect(() => {
+    if (!isSessionActive) {
+      if (finalUserStats) {
+        setUserStats(new Map(finalUserStats));
+      } else {
+        const stats = SessionManager.calculateUserStats(devices);
+        setUserStats(stats);
+      }
+    }
+  }, [isSessionActive, devices, finalUserStats]);
 
   if (devices.length === 0) {
     return (
@@ -80,6 +101,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               key={device.id} 
               device={device} 
               sessionStats={userStats.get(device.id)}
+              isSessionActive={isSessionActive}
             />
           ))}
         </div>

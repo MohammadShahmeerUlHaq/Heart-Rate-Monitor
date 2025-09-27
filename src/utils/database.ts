@@ -27,13 +27,13 @@ export class DatabaseService {
         );
       `;
 
-      const response = await fetch('/api/database/init', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ query: createTableQuery })
-      });
+      // const response = await fetch('/api/database/init', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify({ query: createTableQuery })
+      // });
 
       // Use Electron IPC instead of fetch for API calls
       const response = await window.electronAPI.callAPI('database-init', { query: createTableQuery });
@@ -74,13 +74,13 @@ export class DatabaseService {
         sessionData.totalBluePoints
       ];
 
-      const response = await fetch('/api/database/insert', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ query: insertQuery, values })
-      });
+      // const response = await fetch('/api/database/insert', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify({ query: insertQuery, values })
+      // });
 
       // Use Electron IPC instead of fetch for API calls
       const response = await window.electronAPI.callAPI('database-insert', { query: insertQuery, values });
