@@ -54,6 +54,13 @@ class MockHRMService extends EventEmitter {
         const participant = this.initializeParticipant(participantId);
         this.participants.set(participantId, participant);
         this.emit("deviceConnected", participant);
+      } else {
+        // Ensure existing participants are marked as connected when starting
+        const participant = this.participants.get(participantId);
+        if (participant && !participant.connected) {
+          participant.connected = true;
+          this.emit("deviceConnected", participant);
+        }
       }
     }
 
@@ -68,6 +75,7 @@ class MockHRMService extends EventEmitter {
         // Update participant data
         participant.heartRate = heartRate;
         participant.lastUpdate = now;
+        participant.connected = true; // Ensure device stays connected while sending data
 
         // Emit heart rate update
         this.emit("heartRateData", {

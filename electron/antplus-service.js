@@ -177,6 +177,11 @@ class AntPlusService extends EventEmitter {
       this.devices.set(deviceId, device);
       this.calorieTracking.set(deviceId, { lastUpdate: Date.now(), totalCalories: 0 });
       this.emit("deviceConnected", device);
+    } else if (!device.connected) {
+      // Device was previously disconnected but is now sending data again
+      device.connected = true;
+      console.log(`Device ${deviceId} (${device.name}) reconnected`);
+      this.emit("deviceConnected", device);
     }
 
     // Update device data
@@ -253,11 +258,12 @@ class AntPlusService extends EventEmitter {
         console.log("Active devices:", output);
       }
 
-      // Check for stale devices (no update in 10 seconds)
+      // Check for stale devices (no update in 8 seconds for faster detection)
       const now = Date.now();
       for (const [deviceId, device] of this.devices.entries()) {
-        if (device.connected && now - device.lastUpdate.getTime() > 10000) {
+        if (device.connected && now - device.lastUpdate.getTime() > 8000) {
           device.connected = false;
+          console.log(`Device ${deviceId} (${device.name}) marked as disconnected due to stale data`);
           this.emit("deviceDisconnected", deviceId);
         }
       }
