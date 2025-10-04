@@ -62,6 +62,7 @@ class Application {
       height: 1080,
       minWidth: 800,
       minHeight: 600,
+      fullscreen: true,
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
