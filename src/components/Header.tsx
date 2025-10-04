@@ -25,9 +25,8 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
   return (
-    // <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
-    <header className="bg-gray-800 border-b border-gray-700 px-6 py-4 group relative">
-      <div className="flex items-center justify-between">
+    <header className="bg-gray-800 border-b border-gray-700 px-6 py-4 shrink-0">
+      <div className="flex items-center justify-between relative">
         {/* Logo and Title */}
         <div className="flex items-center space-x-3">
           <div className="bg-red-500 p-2 rounded-lg">
@@ -77,20 +76,21 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onToggleSettings}
             className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors"
+            title="Settings"
           >
             <Settings className="w-5 h-5 text-gray-300" />
           </button>
+
+          {/* Close Button */}
+          <button
+            onClick={handleClose}
+            className="p-2 rounded-lg bg-red-500/80 hover:bg-red-500 text-white transition-colors"
+            title="Close Application"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
       </div>
-
-      {/* Close Button - Only visible on hover */}
-      <button
-        onClick={handleClose}
-        className="absolute top-2 right-2 p-2 rounded-lg bg-red-500/80 hover:bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-all duration-200 z-10"
-        title="Close Application"
-      >
-        <X className="w-4 h-4" />
-      </button>
     </header>
   );
 };

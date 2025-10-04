@@ -10,7 +10,7 @@
     "dev:electron": "wait-on tcp:5173 && cross-env NODE_ENV=development electron .",
     "build": "vite build",
     "build:all": "npm run build && npm run build:electron",
-    "postinstall": "cd electron && npm run rebuild",
+    "postinstall": "cd electron && npm install && (npm run rebuild || true)",
     "dist": "npm run build:all && electron-builder",
     "dist:win": "npm run build:all && electron-builder --win",
     "dist:mac": "npm run build:all && electron-builder --mac",

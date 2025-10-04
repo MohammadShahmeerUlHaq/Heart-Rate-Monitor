@@ -293,7 +293,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="h-screen flex flex-col bg-gray-900 text-white overflow-hidden">
       {!showSettings && (
         <Header
           onToggleSettings={() => setShowSettings(!showSettings)}
@@ -307,22 +307,24 @@ function App() {
 
       <ConnectionStatus status={connectionStatus} />
 
-      {showSettings ? (
-        <Settings
-          devices={devices}
-          onUpdateDeviceName={updateDeviceName}
-          onUpdateDeviceGender={updateDeviceGender}
-          onClose={() => setShowSettings(false)}
-        />
-      ) : (
-        <Dashboard 
-          devices={devices} 
-          isSessionActive={isSessionActive}
-          onStartSession={handleStartSession}
-          onStopSession={handleStopSession}
-          finalUserStats={finalUserStats}
-        />
-      )}
+      <div className="flex-1 overflow-auto">
+        {showSettings ? (
+          <Settings
+            devices={devices}
+            onUpdateDeviceName={updateDeviceName}
+            onUpdateDeviceGender={updateDeviceGender}
+            onClose={() => setShowSettings(false)}
+          />
+        ) : (
+          <Dashboard
+            devices={devices}
+            isSessionActive={isSessionActive}
+            onStartSession={handleStartSession}
+            onStopSession={handleStopSession}
+            finalUserStats={finalUserStats}
+          />
+        )}
+      </div>
     </div>
   );
 }

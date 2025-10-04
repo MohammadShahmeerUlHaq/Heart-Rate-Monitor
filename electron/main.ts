@@ -40,6 +40,7 @@ class Application {
       height: 1920,
       minWidth: 600,
       minHeight: 800,
+      fullscreen: true,
       webPreferences: {
         webSecurity: false,
         nodeIntegration: false,
