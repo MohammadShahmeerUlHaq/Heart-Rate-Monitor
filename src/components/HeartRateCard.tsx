@@ -53,10 +53,11 @@ const getZoneColors = (heartRate: number) => {
 export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionStats, isSessionActive = false }) => {
   const [maxHeartRate, setMaxHeartRate] = useState(0);
   const isStale = device.lastUpdate && Date.now() - device.lastUpdate.getTime() > 5000;
-  const zone =
-    device.connected && !isStale
-      ? getZoneColors(device.heartRate)
-      : { bg: "bg-gray-800", border: "border-gray-700", text: "text-gray-600" };
+  const zone = getZoneColors(device.heartRate);
+  // const zone =
+  //   device.connected && !isStale
+  //     ? getZoneColors(device.heartRate)
+  //     : { bg: "bg-gray-800", border: "border-gray-700", text: "text-gray-600" };
 
   useEffect(() => {
     // Load initial max heart rate
@@ -76,9 +77,14 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
     <div
       className={`
         relative rounded-xl border-2 transition-all duration-300 h-full bg-[#111927]
-        ${device.connected && !isStale ? zone.border : "border-gray-800"}
-        ${device.connected && !isStale ? "shadow-lg" : "opacity-60"}
+        ${ zone.border }
+        ${ "shadow-lg" }
       `}
+      // className={`
+      //   relative rounded-xl border-2 transition-all duration-300 h-full bg-[#111927]
+      //   ${device.connected && !isStale ? zone.border : "border-gray-800"}
+      //   ${device.connected && !isStale ? "shadow-lg" : "opacity-60"}
+      // `}
     >
       {/* Connection Status */}
       <div className="absolute top-4 right-4">
@@ -110,16 +116,23 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
                   <div className="flex items-center gap-3">
                     <Heart
                       className={`w-8 h-8 ${
-                        device.connected && !isStale && device.heartRate > 0
-                          ? `${zone.text} animate-pulse`
-                          : "text-gray-500"
+                        `${zone.text} animate-pulse`
                       }`}
+                      // className={`w-8 h-8 ${
+                      //   device.connected && !isStale && device.heartRate > 0
+                      //     ? `${zone.text} animate-pulse`
+                      //     : "text-gray-500"
+                      // }`}
                       fill={
-                        device.connected && !isStale && device.heartRate > 0 ? "currentColor" : "none"
+                        "currentColor"
                       }
+                      // fill={
+                      //   device.connected && !isStale && device.heartRate > 0 ? "currentColor" : "none"
+                      // }
                     />
                     <div className="text-4xl font-bold text-white">
-                      {device.connected && !isStale ? device.heartRate : "--"}
+                      { device.heartRate }
+                      {/* {device.connected && !isStale ? device.heartRate : "--"} */}
                     </div>
                   </div>
                 </div>
@@ -129,7 +142,8 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
                   <div className="flex items-center gap-3">
                     <Zap className="w-8 h-8 text-yellow-500" />
                     <div className="text-4xl font-bold text-white">
-                      {device.connected && !isStale ? Math.round(sessionStats?.totalCalories || device.calories || 0) : "--"}
+                      {/* {device.connected && !isStale ? Math.round(sessionStats?.totalCalories || device.calories || 0) : "--"} */}
+                      { Math.round(sessionStats?.totalCalories || device.calories || 0)}
                     </div>
                   </div>
                 </div>
@@ -139,7 +153,8 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
                   <div className="flex items-center gap-3">
                     <Snowflake className="w-8 h-8 text-blue-500" />
                     <div className="text-4xl font-bold text-white">
-                      {device.connected && !isStale ? Math.round(sessionStats?.totalBluePoints || device.bluePoints || 0) : "--"}
+                      {/* {device.connected && !isStale ? Math.round(sessionStats?.totalBluePoints || device.bluePoints || 0) : "--"} */}
+                      { Math.round(sessionStats?.totalBluePoints || device.bluePoints || 0) }
                     </div>
                   </div>
                 </div>
@@ -151,13 +166,15 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
                   <div className="flex items-center gap-3">
                     <Zap className="w-8 h-8 text-yellow-500" />
                     <div className="text-3xl font-bold text-white">
-                      {device.connected && !isStale ? Math.round(sessionStats?.totalCalories || 0) : "--"}
+                      {/* {device.connected && !isStale ? Math.round(sessionStats?.totalCalories || 0) : "--"} */}
+                      { Math.round(sessionStats?.totalCalories || 0) }
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <Heart className="w-6 h-6 text-blue-400" />
                     <div className="text-2xl font-bold text-white">
-                      {device.connected && !isStale && sessionStats ? Math.round(sessionStats.averageHeartRate) : "--"}
+                      {/* {device.connected && !isStale && sessionStats ? Math.round(sessionStats.averageHeartRate) : "--"} */}
+                      {sessionStats ? Math.round(sessionStats.averageHeartRate) : "--"}
                     </div>
                     <div className="text-xs text-gray-400">AVG</div>
                   </div>
@@ -168,13 +185,15 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
                   <div className="flex items-center gap-3">
                     <Snowflake className="w-8 h-8 text-blue-500" />
                     <div className="text-3xl font-bold text-white">
-                      {device.connected && !isStale ? Math.round(sessionStats?.totalBluePoints || 0) : "--"}
+                      {/* {device.connected && !isStale ? Math.round(sessionStats?.totalBluePoints || 0) : "--"} */}
+                      { Math.round(sessionStats?.totalBluePoints || 0)}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <Heart className="w-6 h-6 text-red-400" />
                     <div className="text-2xl font-bold text-white">
-                      {device.connected && !isStale && sessionStats ? sessionStats.maxHeartRate : "--"}
+                      {/* {device.connected && !isStale && sessionStats ? sessionStats.maxHeartRate : "--"} */}
+                      {sessionStats ? sessionStats.maxHeartRate : "--"}
                     </div>
                     <div className="text-xs text-gray-400">MAX</div>
                   </div>
@@ -186,7 +205,13 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
           {/* Circular Progress (Only Active) */}
           {isSessionActive && (
             <div className="flex-shrink-0">
-              {device.connected && !isStale ? (
+              <CircularProgress
+                  percentage={
+                    maxHeartRate > 0 ? Math.round((device.heartRate / maxHeartRate) * 100) : 0
+                  }
+                  color={zone.text}
+              />
+              {/* {device.connected && !isStale ? (
                 <CircularProgress
                   percentage={
                     maxHeartRate > 0 ? Math.round((device.heartRate / maxHeartRate) * 100) : 0
@@ -195,14 +220,14 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
                 />
               ) : (
                 <CircularProgress percentage={0} color="#374151" />
-              )}
+              )} */}
             </div>
           )}
         </div>
       </div>
 
       {/* Disconnected Overlay */}
-      {(!device.connected || isStale) && (
+      {/* {(!device.connected || isStale) && (
         <div className="absolute inset-0 bg-gray-900/80 rounded-xl flex items-center justify-center">
           <div className="text-center">
             <WifiOff className="w-12 h-12 text-gray-500 mx-auto mb-2" />
@@ -211,130 +236,12 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
             </div>
           </div>
         </div>
-      )}
+      )} */}
+      {/* {(!device.connected || isStale) && (
+        <div className="absolute inset-0 bg-gray-900/80 rounded-xl flex items-center justify-center">
+          <WifiOff className="w-12 h-12 text-gray-500" />
+        </div>
+      )} */}
     </div>
-    // <div
-    //   className={`
-    //   relative rounded-xl border-2 transition-all duration-300 h-full bg-[#111927]
-    //   ${device.connected && !isStale ? zone.border : "border-gray-800"}
-    //   ${device.connected && !isStale ? "shadow-lg" : "opacity-60"}
-    // `}
-    // >
-    //   {/* Connection Status */}
-    //   <div className="absolute top-4 right-4">
-    //     {device.connected && !isStale ? (
-    //       <Wifi className="w-5 h-5 text-green-400" />
-    //     ) : (
-    //       <WifiOff className="w-5 h-5 text-gray-500" />
-    //     )}
-    //   </div>
-
-    //   {/* Content Container */}
-    //   <div className="p-6 flex flex-col h-full">
-    //     {/* Participant Name */}
-    //     <div className="mb-6">
-    //       <h3 className="text-lg font-bold text-white truncate">{device.name}</h3>
-    //     </div>
-
-    //     <div className="flex-1 flex items-center justify-between gap-4">
-    //       {/* Stats Column */}
-    //       <div className="flex flex-col gap-6">
-    //         {/* Heart Rate */}
-    //         {isSessionActive && (
-    //         <div className="flex flex-col">
-    //           <div className="flex items-center gap-3">
-    //             <Heart
-    //               className={`w-8 h-8 ${
-    //                 device.connected && !isStale && device.heartRate > 0
-    //                   ? `${zone.text} animate-pulse`
-    //                   : "text-gray-500"
-    //               }`}
-    //               fill={
-    //                 device.connected && !isStale && device.heartRate > 0 ? "currentColor" : "none"
-    //               }
-    //             />
-    //             <div className="text-4xl font-bold text-white">
-    //               {device.connected && !isStale && isSessionActive ? device.heartRate : "--"}
-    //             </div>
-    //           </div>
-    //         </div>)}
-
-    //         {/* Calories */}
-    //         <div className="flex flex-col">
-    //           <div className="flex items-center gap-3">
-    //             <Zap className="w-8 h-8 text-yellow-500" />
-    //             <div className="text-4xl font-bold text-white">
-    //               {device.connected && !isStale ? Math.round(sessionStats?.totalCalories || device.calories || 0) : "--"}
-    //             </div>
-    //           </div>
-    //         </div>
-
-    //         {/* Blue Points */}
-    //         <div className="flex flex-col">
-    //           <div className="flex items-center gap-3">
-    //             <Snowflake className="w-8 h-8 text-blue-500" />
-    //             <div className="text-4xl font-bold text-white">
-    //               {device.connected && !isStale ? Math.round(sessionStats?.totalBluePoints || device.bluePoints || 0) : "--"}
-    //             </div>
-    //           </div>
-    //         </div>
-
-    //         {/* Average Heart Rate - Only show when session is not active */}
-    //         {!isSessionActive && (
-    //           <div className="flex flex-col">
-    //             <div className="flex items-center gap-3">
-    //               <Heart className="w-6 h-6 text-blue-400" />
-    //               <div className="text-2xl font-bold text-white">
-    //                 {device.connected && !isStale && sessionStats ? Math.round(sessionStats.averageHeartRate) : "--"}
-    //               </div>
-    //             </div>
-    //             <div className="text-xs text-gray-400 ml-9">AVG HR</div>
-    //           </div>
-    //         )}
-
-    //         {/* Max Heart Rate - Only show when session is not active */}
-    //         {!isSessionActive && (
-    //           <div className="flex flex-col">
-    //             <div className="flex items-center gap-3">
-    //               <Heart className="w-6 h-6 text-red-400" />
-    //               <div className="text-2xl font-bold text-white">
-    //                 {device.connected && !isStale && sessionStats ? sessionStats.maxHeartRate : "--"}
-    //               </div>
-    //             </div>
-    //             <div className="text-xs text-gray-400 ml-9">MAX HR</div>
-    //           </div>
-    //         )}
-    //       </div>
-
-    //       {/* Circular Progress */}
-    //       {isSessionActive && (
-    //       <div className="flex-shrink-0">
-    //         {device.connected && !isStale && isSessionActive ? (
-    //           <CircularProgress
-    //             percentage={
-    //               maxHeartRate > 0 ? Math.round((device.heartRate / maxHeartRate) * 100) : 0
-    //             }
-    //             color={zone.text}
-    //           />
-    //         ) : (
-    //           <CircularProgress percentage={0} color="#374151" />
-    //         )}
-    //       </div>
-    //       )}
-    //     </div>
-    //   </div>
-
-    //   {/* Disconnected Overlay */}
-    //   {(!device.connected || isStale) && (
-    //     <div className="absolute inset-0 bg-gray-900/80 rounded-xl flex items-center justify-center">
-    //       <div className="text-center">
-    //         <WifiOff className="w-12 h-12 text-gray-500 mx-auto mb-2" />
-    //         <div className="text-gray-400 font-medium">
-    //           {isStale ? "Signal Lost" : "Disconnected"}
-    //         </div>
-    //       </div>
-    //     </div>
-    //   )}
-    // </div>
   );
 };
