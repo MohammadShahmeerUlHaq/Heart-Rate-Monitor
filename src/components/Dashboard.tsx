@@ -8,16 +8,22 @@ import { UserSessionStats } from "../types/session";
 interface DashboardProps {
   devices: HeartRateDevice[];
   isSessionActive: boolean;
+  isSessionPaused: boolean;
   onStartSession: () => void;
   onStopSession: () => void;
+  onPauseSession: () => void;
+  onResumeSession: () => void;
   finalUserStats?: Map<string, UserSessionStats> | null;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ 
-  devices, 
-  isSessionActive, 
-  onStartSession, 
+export const Dashboard: React.FC<DashboardProps> = ({
+  devices,
+  isSessionActive,
+  isSessionPaused,
+  onStartSession,
   onStopSession,
+  onPauseSession,
+  onResumeSession,
   finalUserStats
 }) => {
   // const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
@@ -26,7 +32,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
     totalCalories: 0,
     elapsedTime: 0
   });
-  const [userStats, setUserStats] = useState<Map<string, UserSessionStats>>(new Map());
+  const [userStats, setUserStats] = useState<Map<string, UserSessionStats>>(
+    new Map()
+  );
 
   // Update class time every second (independent of device changes)
   useEffect(() => {
@@ -56,8 +64,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Update total calories and blue points whenever devices update, but only during active session
   useEffect(() => {
     if (!isSessionActive) return;
-    const totalCalories = devices.reduce((sum, device) => sum + (device.calories || 0), 0);
-    const totalBluePoints = devices.reduce((sum, device) => sum + (device.bluePoints || 0), 0);
+    const totalCalories = devices.reduce(
+      (sum, device) => sum + (device.calories || 0),
+      0
+    );
+    const totalBluePoints = devices.reduce(
+      (sum, device) => sum + (device.bluePoints || 0),
+      0
+    );
 
     setClassStats((prev) => ({
       ...prev,
@@ -83,9 +97,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">💓</div>
-          <h2 className="text-2xl font-semibold mb-2">No Heart Rate Monitors Detected</h2>
+          <h2 className="text-2xl font-semibold mb-2">
+            No Heart Rate Monitors Detected
+          </h2>
           <p className="text-gray-400">
-            Make sure your ANT+ USB dongle is connected and heart rate monitors are active.
+            Make sure your ANT+ USB dongle is connected and heart rate monitors
+            are active.
           </p>
         </div>
       </div>
@@ -97,9 +114,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="flex-1 p-6 pb-24">
         <div className="grid grid-cols-2 gap-8 auto-rows-fr">
           {devices.map((device) => (
-            <HeartRateCard 
-              key={device.id} 
-              device={device} 
+            <HeartRateCard
+              key={device.id}
+              device={device}
               sessionStats={userStats.get(device.id)}
               isSessionActive={isSessionActive}
             />
@@ -113,8 +130,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
         coachName="Jared"
         classTime={classStats.elapsedTime}
         isSessionActive={isSessionActive}
+        isSessionPaused={isSessionPaused}
         onStartSession={onStartSession}
         onStopSession={onStopSession}
+        onPauseSession={onPauseSession}
+        onResumeSession={onResumeSession}
       />
     </>
   );

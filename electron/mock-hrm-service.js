@@ -1,12 +1,12 @@
 const { EventEmitter } = require("events");
 
 class MockHRMService extends EventEmitter {
-  constructor(numParticipants = 12) {
+  constructor(numParticipants = 4) {
     super();
     this.participants = new Map();
     this.mockIntervals = new Map();
     this.baseHeartRates = new Map();
-    this.numParticipants = Math.min(12, Math.max(1, numParticipants));
+    this.numParticipants = Math.max(1, numParticipants);
   }
 
   // Initialize a participant with a realistic base heart rate
@@ -23,7 +23,7 @@ class MockHRMService extends EventEmitter {
       connected: true,
       calories: 0,
       bluePoints: 0,
-      gender: Math.random() > 0.5 ? "male" : "female"
+      gender: Math.random() > 0.5 ? "male" : "female",
     };
   }
 
@@ -68,22 +68,25 @@ class MockHRMService extends EventEmitter {
     this.participants.forEach((participant, id) => {
       if (this.mockIntervals.has(id)) return;
 
-      const interval = setInterval(() => {
-        const heartRate = this.generateHeartRate(id);
-        const now = new Date();
+      const interval = setInterval(
+        () => {
+          const heartRate = this.generateHeartRate(id);
+          const now = new Date();
 
-        // Update participant data
-        participant.heartRate = heartRate;
-        participant.lastUpdate = now;
-        participant.connected = true; // Ensure device stays connected while sending data
+          // Update participant data
+          participant.heartRate = heartRate;
+          participant.lastUpdate = now;
+          participant.connected = true; // Ensure device stays connected while sending data
 
-        // Emit heart rate update
-        this.emit("heartRateData", {
-          deviceId: id,
-          heartRate,
-          timestamp: now
-        });
-      }, 1000 + Math.random() * 500); // Slightly different intervals for each participant
+          // Emit heart rate update
+          this.emit("heartRateData", {
+            deviceId: id,
+            heartRate,
+            timestamp: now,
+          });
+        },
+        1000 + Math.random() * 500,
+      ); // Slightly different intervals for each participant
 
       this.mockIntervals.set(id, interval);
     });

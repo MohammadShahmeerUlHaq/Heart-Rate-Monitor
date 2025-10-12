@@ -67,10 +67,10 @@ class Application {
         nodeIntegration: false,
         contextIsolation: true,
         preload: path.join(__dirname, "preload.js"),
-        webSecurity: false
+        webSecurity: false,
       },
       titleBarStyle: "hidden",
-      icon: path.join(__dirname, "../assets/icon.png")
+      icon: path.join(__dirname, "../assets/icon.png"),
     });
 
     const isDev = process.env.NODE_ENV === "development";
@@ -83,9 +83,12 @@ class Application {
     }
 
     // Debug: Log any load errors
-    this.mainWindow.webContents.on("did-fail-load", (event, errorCode, errorDescription) => {
-      console.error("Failed to load:", errorCode, errorDescription);
-    });
+    this.mainWindow.webContents.on(
+      "did-fail-load",
+      (event, errorCode, errorDescription) => {
+        console.error("Failed to load:", errorCode, errorDescription);
+      },
+    );
 
     this.setupIpcHandlers();
   }
@@ -110,10 +113,10 @@ class Application {
               if (this.mainWindow) {
                 this.mainWindow.setFullScreen(!this.mainWindow.isFullScreen());
               }
-            }
-          }
-        ]
-      }
+            },
+          },
+        ],
+      },
     ];
 
     if (process.platform === "darwin") {
@@ -126,8 +129,8 @@ class Application {
           { role: "hideOthers" },
           { role: "unhide" },
           { type: "separator" },
-          { role: "quit" }
-        ]
+          { role: "quit" },
+        ],
       });
     }
 
@@ -138,7 +141,7 @@ class Application {
   setupIpcHandlers() {
     ipcMain.handle("start-ant-scan", async (_, options = {}) => {
       try {
-        const isMock = false;
+        const isMock = true;
         if (!this.antPlusService) {
           this.antPlusService = new AntPlusService({ mockMode: isMock });
           this.setupAntPlusListeners();
@@ -158,11 +161,14 @@ class Application {
         if (options.mockMode) {
           return { success: true, mock: true };
         }
-        if (error.message && error.message.includes("ANT+ USB dongle not found")) {
+        if (
+          error.message &&
+          error.message.includes("ANT+ USB dongle not found")
+        ) {
           if (this.mainWindow) {
             dialog.showErrorBox(
               "ANT+ Device Not Connected",
-              "ANT+ USB dongle not found! Please ensure it is connected and try again."
+              "ANT+ USB dongle not found! Please ensure it is connected and try again.",
             );
           }
           return { success: false, error: "ANT_DEVICE_NOT_CONNECTED" };
@@ -187,7 +193,7 @@ class Application {
       return this.antPlusService?.getDevices() || [];
     });
 
-    ipcMain.handle('close-app', () => {
+    ipcMain.handle("close-app", () => {
       app.quit();
     });
 

@@ -24,14 +24,18 @@ class AntPlusService extends EventEmitter {
     }
     if (this.mockMode && this.mockService) {
       // Forward all events from mock service
-      this.mockService.on("heartRateData", (data) => this.emit("heartRateData", data));
-      this.mockService.on("deviceConnected", (device) => this.emit("deviceConnected", device));
+      this.mockService.on("heartRateData", (data) =>
+        this.emit("heartRateData", data),
+      );
+      this.mockService.on("deviceConnected", (device) =>
+        this.emit("deviceConnected", device),
+      );
       this.mockService.on("deviceDisconnected", (deviceId) =>
-        this.emit("deviceDisconnected", deviceId)
+        this.emit("deviceDisconnected", deviceId),
       );
 
-      this.mockService.startMocking();
       this.isScanning = true;
+      this.mockService.startMocking();
       return { success: true, mock: true };
     }
     try {
@@ -73,7 +77,9 @@ class AntPlusService extends EventEmitter {
       }
       console.error("Failed to initialize ANT+ stick:", error);
       if (error.message === "ANT_DEVICE_NOT_CONNECTED") {
-        throw new Error("ANT+ USB dongle not found! Please ensure it is connected.");
+        throw new Error(
+          "ANT+ USB dongle not found! Please ensure it is connected.",
+        );
       }
       throw new Error(`ANT+ initialization failed: ${error.message}`);
     }
@@ -85,7 +91,7 @@ class AntPlusService extends EventEmitter {
       "a40340010109ee", // Device scan event
       "a40340030109ec", // Device connection event
       "a403400101", // Common heartbeat events
-      "a403400301" // Common data events
+      "a403400301", // Common data events
     ];
 
     const isKnownEvent = knownEvents.some((known) => eventId.startsWith(known));
@@ -172,10 +178,13 @@ class AntPlusService extends EventEmitter {
         lastUpdate: new Date(),
         connected: true,
         calories: 0,
-        zone: 1
+        zone: 1,
       };
       this.devices.set(deviceId, device);
-      this.calorieTracking.set(deviceId, { lastUpdate: Date.now(), totalCalories: 0 });
+      this.calorieTracking.set(deviceId, {
+        lastUpdate: Date.now(),
+        totalCalories: 0,
+      });
       this.emit("deviceConnected", device);
     } else if (!device.connected) {
       // Device was previously disconnected but is now sending data again
@@ -202,7 +211,7 @@ class AntPlusService extends EventEmitter {
     // Update calorie tracking
     this.calorieTracking.set(deviceId, {
       lastUpdate: now,
-      totalCalories: device.calories
+      totalCalories: device.calories,
     });
 
     // Store in sensors object for compatibility
@@ -211,7 +220,7 @@ class AntPlusService extends EventEmitter {
     const heartRateData = {
       deviceId,
       heartRate,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     this.emit("heartRateData", heartRateData);
@@ -263,7 +272,9 @@ class AntPlusService extends EventEmitter {
       for (const [deviceId, device] of this.devices.entries()) {
         if (device.connected && now - device.lastUpdate.getTime() > 8000) {
           device.connected = false;
-          console.log(`Device ${deviceId} (${device.name}) marked as disconnected due to stale data`);
+          console.log(
+            `Device ${deviceId} (${device.name}) marked as disconnected due to stale data`,
+          );
           this.emit("deviceDisconnected", deviceId);
         }
       }

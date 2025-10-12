@@ -1,8 +1,9 @@
-import { SessionData } from '../types/session';
+import { SessionData } from "../types/session";
 
 // Database configuration
 const DB_CONFIG = {
-  connectionString: 'postgresql://neondb_owner:npg_PFYcur25WOXR@ep-floral-wildflower-advjfh6o-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+  connectionString:
+    "postgresql://neondb_owner:npg_PFYcur25WOXR@ep-floral-wildflower-advjfh6o-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
 };
 
 export class DatabaseService {
@@ -36,15 +37,17 @@ export class DatabaseService {
       // });
 
       // Use Electron IPC instead of fetch for API calls
-      const response = await window.electronAPI.callAPI('database-init', { query: createTableQuery });
+      const response = await window.electronAPI.callAPI("database-init", {
+        query: createTableQuery,
+      });
 
       if (!response.success) {
-        throw new Error(response.error || 'Failed to initialize database');
+        throw new Error(response.error || "Failed to initialize database");
       }
 
-      console.log('Database initialized successfully');
+      console.log("Database initialized successfully");
     } catch (error) {
-      console.error('Database initialization error:', error);
+      console.error("Database initialization error:", error);
       throw error;
     }
   }
@@ -71,7 +74,7 @@ export class DatabaseService {
         sessionData.averageHeartRate,
         sessionData.maxHeartRate,
         sessionData.totalCalories,
-        sessionData.totalBluePoints
+        sessionData.totalBluePoints,
       ];
 
       // const response = await fetch('/api/database/insert', {
@@ -83,15 +86,18 @@ export class DatabaseService {
       // });
 
       // Use Electron IPC instead of fetch for API calls
-      const response = await window.electronAPI.callAPI('database-insert', { query: insertQuery, values });
+      const response = await window.electronAPI.callAPI("database-insert", {
+        query: insertQuery,
+        values,
+      });
 
       if (!response.success) {
-        throw new Error(response.error || 'Failed to save session data');
+        throw new Error(response.error || "Failed to save session data");
       }
 
       return response.id;
     } catch (error) {
-      console.error('Error saving session data:', error);
+      console.error("Error saving session data:", error);
       throw error;
     }
   }

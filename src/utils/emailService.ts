@@ -73,7 +73,7 @@
 //             <h2>Hello ${sessionData.name}!</h2>
 //             <p>Here's your workout summary from ${sessionData.timestamp.toLocaleDateString()}</p>
 //           </div>
-          
+
 //           <div class="stats">
 //             <div class="stat">
 //               <div class="stat-value">${Math.round(sessionData.totalBluePoints)}</div>
@@ -92,18 +92,18 @@
 //               <div class="stat-label">Max HR (BPM)</div>
 //             </div>
 //           </div>
-          
+
 //           <div class="stats">
 //             <div class="stat">
 //               <div class="stat-value">${formatTime(sessionData.totalSessionTime)}</div>
 //               <div class="stat-label">Session Time</div>
 //             </div>
 //           </div>
-          
+
 //           <div class="chart-container">
 //             <p>Your detailed workout chart is attached to this email.</p>
 //           </div>
-          
+
 //           <div class="footer">
 //             <p>Keep up the great work!</p>
 //             <p>Heart Rate Monitor App</p>
@@ -115,15 +115,18 @@
 //   }
 // }
 
-import { SessionData } from '../types/session';
+import { SessionData } from "../types/session";
 
 export class EmailService {
   private static readonly EMAIL_CONFIG = {
-    sender: 'heartratemonitor@gmail.com',
-    password: 'puiprcgewpajyniu'
+    sender: "heartratemonitor@gmail.com",
+    password: "puiprcgewpajyniu",
   };
 
-  static async sendSessionReport(sessionData: SessionData, chartImageBase64: string): Promise<void> {
+  static async sendSessionReport(
+    sessionData: SessionData,
+    chartImageBase64: string,
+  ): Promise<void> {
     try {
       const emailData = {
         to: sessionData.email,
@@ -131,33 +134,39 @@ export class EmailService {
         html: this.generateEmailHTML(sessionData, chartImageBase64),
         attachments: [
           {
-            filename: 'chart.png',
+            filename: "chart.png",
             content: chartImageBase64,
-            encoding: 'base64',
-            cid: 'heartRateChart' // Content ID for embedding
-          }
-        ]
+            encoding: "base64",
+            cid: "heartRateChart", // Content ID for embedding
+          },
+        ],
       };
 
       // Use Electron IPC instead of fetch for API calls
-      const response = await window.electronAPI.callAPI('email-send', emailData);
+      const response = await window.electronAPI.callAPI(
+        "email-send",
+        emailData,
+      );
 
       if (!response.success) {
-        throw new Error(response.error || 'Failed to send email');
+        throw new Error(response.error || "Failed to send email");
       }
 
       console.log(`Email sent successfully to ${sessionData.email}`);
     } catch (error) {
-      console.error('Error sending email:', error);
+      console.error("Error sending email:", error);
       throw error;
     }
   }
 
-  private static generateEmailHTML(sessionData: SessionData, chartImageBase64: string): string {
+  private static generateEmailHTML(
+    sessionData: SessionData,
+    chartImageBase64: string,
+  ): string {
     const formatTime = (seconds: number) => {
       const minutes = Math.floor(seconds / 60);
       const remainingSeconds = seconds % 60;
-      return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+      return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
     };
 
     return `

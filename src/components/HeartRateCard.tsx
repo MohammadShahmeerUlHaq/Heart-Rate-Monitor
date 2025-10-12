@@ -17,42 +17,47 @@ const getZoneColors = (heartRate: number) => {
       bg: "bg-green-500/20",
       border: "border-green-500",
       text: "text-green-400",
-      name: "GREEN ZONE"
+      name: "GREEN ZONE",
     };
   } else if (heartRate <= 140) {
     return {
       bg: "bg-blue-500/20",
       border: "border-blue-500",
       text: "text-blue-400",
-      name: "BLUE ZONE"
+      name: "BLUE ZONE",
     };
   } else if (heartRate <= 150) {
     return {
       bg: "bg-blue-800/20",
       border: "border-blue-800",
       text: "text-blue-700",
-      name: "DARK BLUE"
+      name: "DARK BLUE",
     };
   } else if (heartRate <= 160) {
     return {
       bg: "bg-orange-500/20",
       border: "border-orange-500",
       text: "text-orange-400",
-      name: "ORANGE"
+      name: "ORANGE",
     };
   } else {
     return {
       bg: "bg-red-500/20",
       border: "border-red-500",
       text: "text-red-400",
-      name: "RED ZONE"
+      name: "RED ZONE",
     };
   }
 };
 
-export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionStats, isSessionActive = false }) => {
+export const HeartRateCard: React.FC<HeartRateCardProps> = ({
+  device,
+  sessionStats,
+  isSessionActive = false,
+}) => {
   const [maxHeartRate, setMaxHeartRate] = useState(0);
-  const isStale = device.lastUpdate && Date.now() - device.lastUpdate.getTime() > 5000;
+  const isStale =
+    device.lastUpdate && Date.now() - device.lastUpdate.getTime() > 5000;
   const zone = getZoneColors(device.heartRate);
   // const zone =
   //   device.connected && !isStale
@@ -66,7 +71,10 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
 
     // Update max heart rate if current heart rate is higher
     if (device.heartRate > storedMax && device.heartRate > 0) {
-      ParticipantSettingsManager.updateMaxHeartRate(device.id, device.heartRate);
+      ParticipantSettingsManager.updateMaxHeartRate(
+        device.id,
+        device.heartRate,
+      );
       setMaxHeartRate(device.heartRate);
     }
   }, [device.heartRate, device.id]);
@@ -77,8 +85,8 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
     <div
       className={`
         relative rounded-xl border-2 transition-all duration-300 h-full bg-[#111927]
-        ${ zone.border }
-        ${ "shadow-lg" }
+        ${zone.border}
+        ${"shadow-lg"}
       `}
       // className={`
       //   relative rounded-xl border-2 transition-all duration-300 h-full bg-[#111927]
@@ -100,14 +108,14 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
         {/* Participant Name */}
         <div className="mb-6">
           <h3 className="text-lg font-bold text-white truncate">
-            {!isSessionActive && "Summary - "}{device.name}
+            {!isSessionActive && "Summary - "}
+            {device.name}
           </h3>
         </div>
 
         <div className="flex-1 flex items-center justify-between gap-4">
           {/* Stats Column */}
           <div className="flex flex-col gap-6">
-
             {/* Active Session Stats */}
             {isSessionActive ? (
               <>
@@ -115,23 +123,19 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
                 <div className="flex flex-col">
                   <div className="flex items-center gap-3">
                     <Heart
-                      className={`w-8 h-8 ${
-                        `${zone.text} animate-pulse`
-                      }`}
+                      className={`w-8 h-8 ${`${zone.text} animate-pulse`}`}
                       // className={`w-8 h-8 ${
                       //   device.connected && !isStale && device.heartRate > 0
                       //     ? `${zone.text} animate-pulse`
                       //     : "text-gray-500"
                       // }`}
-                      fill={
-                        "currentColor"
-                      }
+                      fill={"currentColor"}
                       // fill={
                       //   device.connected && !isStale && device.heartRate > 0 ? "currentColor" : "none"
                       // }
                     />
                     <div className="text-4xl font-bold text-white">
-                      { device.heartRate }
+                      {device.heartRate}
                       {/* {device.connected && !isStale ? device.heartRate : "--"} */}
                     </div>
                   </div>
@@ -143,7 +147,9 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
                     <Zap className="w-8 h-8 text-yellow-500" />
                     <div className="text-4xl font-bold text-white">
                       {/* {device.connected && !isStale ? Math.round(sessionStats?.totalCalories || device.calories || 0) : "--"} */}
-                      { Math.round(sessionStats?.totalCalories || device.calories || 0)}
+                      {Math.round(
+                        sessionStats?.totalCalories || device.calories || 0,
+                      )}
                     </div>
                   </div>
                 </div>
@@ -154,7 +160,9 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
                     <Snowflake className="w-8 h-8 text-blue-500" />
                     <div className="text-4xl font-bold text-white">
                       {/* {device.connected && !isStale ? Math.round(sessionStats?.totalBluePoints || device.bluePoints || 0) : "--"} */}
-                      { Math.round(sessionStats?.totalBluePoints || device.bluePoints || 0) }
+                      {Math.round(
+                        sessionStats?.totalBluePoints || device.bluePoints || 0,
+                      )}
                     </div>
                   </div>
                 </div>
@@ -167,14 +175,16 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
                     <Zap className="w-8 h-8 text-yellow-500" />
                     <div className="text-3xl font-bold text-white">
                       {/* {device.connected && !isStale ? Math.round(sessionStats?.totalCalories || 0) : "--"} */}
-                      { Math.round(sessionStats?.totalCalories || 0) }
+                      {Math.round(sessionStats?.totalCalories || 0)}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <Heart className="w-6 h-6 text-blue-400" />
                     <div className="text-2xl font-bold text-white">
                       {/* {device.connected && !isStale && sessionStats ? Math.round(sessionStats.averageHeartRate) : "--"} */}
-                      {sessionStats ? Math.round(sessionStats.averageHeartRate) : "--"}
+                      {sessionStats
+                        ? Math.round(sessionStats.averageHeartRate)
+                        : "--"}
                     </div>
                     <div className="text-xs text-gray-400">AVG</div>
                   </div>
@@ -186,7 +196,7 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
                     <Snowflake className="w-8 h-8 text-blue-500" />
                     <div className="text-3xl font-bold text-white">
                       {/* {device.connected && !isStale ? Math.round(sessionStats?.totalBluePoints || 0) : "--"} */}
-                      { Math.round(sessionStats?.totalBluePoints || 0)}
+                      {Math.round(sessionStats?.totalBluePoints || 0)}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -206,10 +216,12 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({ device, sessionSta
           {isSessionActive && (
             <div className="flex-shrink-0">
               <CircularProgress
-                  percentage={
-                    maxHeartRate > 0 ? Math.round((device.heartRate / maxHeartRate) * 100) : 0
-                  }
-                  color={zone.text}
+                percentage={
+                  maxHeartRate > 0
+                    ? Math.round((device.heartRate / maxHeartRate) * 100)
+                    : 0
+                }
+                color={zone.text}
               />
               {/* {device.connected && !isStale ? (
                 <CircularProgress

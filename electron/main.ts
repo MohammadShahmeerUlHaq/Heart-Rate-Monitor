@@ -45,10 +45,10 @@ class Application {
         webSecurity: false,
         nodeIntegration: false,
         contextIsolation: true,
-        preload: path.join(__dirname, "preload.js")
+        preload: path.join(__dirname, "preload.js"),
       },
       titleBarStyle: "hidden",
-      icon: path.join(__dirname, "../assets/icon.png")
+      icon: path.join(__dirname, "../assets/icon.png"),
     });
 
     const isDev = process.env.NODE_ENV === "development";
@@ -83,10 +83,10 @@ class Application {
               if (this.mainWindow) {
                 this.mainWindow.setFullScreen(!this.mainWindow.isFullScreen());
               }
-            }
-          }
-        ]
-      }
+            },
+          },
+        ],
+      },
     ];
 
     if (process.platform === "darwin") {
@@ -99,8 +99,8 @@ class Application {
           { role: "hideOthers" },
           { role: "unhide" },
           { type: "separator" },
-          { role: "quit" }
-        ]
+          { role: "quit" },
+        ],
       });
     }
 
@@ -140,7 +140,7 @@ class Application {
       return this.antPlusService?.getDevices() || [];
     });
 
-    ipcMain.handle('close-app', () => {
+    ipcMain.handle("close-app", () => {
       app.quit();
     });
 

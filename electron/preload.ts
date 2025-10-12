@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer } from "electron";
 
 export interface ElectronAPI {
   startAntScan: () => Promise<{ success: boolean; error?: string }>;
@@ -11,22 +11,22 @@ export interface ElectronAPI {
 }
 
 const electronAPI: ElectronAPI = {
-  startAntScan: () => ipcRenderer.invoke('start-ant-scan'),
-  stopAntScan: () => ipcRenderer.invoke('stop-ant-scan'),
-  getDevices: () => ipcRenderer.invoke('get-devices'),
+  startAntScan: () => ipcRenderer.invoke("start-ant-scan"),
+  stopAntScan: () => ipcRenderer.invoke("stop-ant-scan"),
+  getDevices: () => ipcRenderer.invoke("get-devices"),
   onHeartRateUpdate: (callback) => {
-    ipcRenderer.on('heart-rate-update', (_, data) => callback(data));
+    ipcRenderer.on("heart-rate-update", (_, data) => callback(data));
   },
   onDeviceConnected: (callback) => {
-    ipcRenderer.on('device-connected', (_, device) => callback(device));
+    ipcRenderer.on("device-connected", (_, device) => callback(device));
   },
   onDeviceDisconnected: (callback) => {
-    ipcRenderer.on('device-disconnected', (_, deviceId) => callback(deviceId));
+    ipcRenderer.on("device-disconnected", (_, deviceId) => callback(deviceId));
   },
-  closeApp: () => ipcRenderer.invoke('close-app')
+  closeApp: () => ipcRenderer.invoke("close-app"),
 };
 
-contextBridge.exposeInMainWorld('electronAPI', electronAPI);
+contextBridge.exposeInMainWorld("electronAPI", electronAPI);
 
 declare global {
   interface Window {

@@ -10,34 +10,37 @@ export const defaultHeartRateZones: HeartRateZone[] = [
   {
     min: 50,
     max: 100,
-    name: 'WARM UP',
-    color: 'blue',
-    description: 'Light activity, recovery'
+    name: "WARM UP",
+    color: "blue",
+    description: "Light activity, recovery",
   },
   {
     min: 100,
     max: 130,
-    name: 'FAT BURN',
-    color: 'green', 
-    description: 'Moderate intensity, fat burning'
+    name: "FAT BURN",
+    color: "green",
+    description: "Moderate intensity, fat burning",
   },
   {
     min: 130,
     max: 160,
-    name: 'CARDIO',
-    color: 'orange',
-    description: 'High intensity cardio training'
+    name: "CARDIO",
+    color: "orange",
+    description: "High intensity cardio training",
   },
   {
     min: 160,
     max: 220,
-    name: 'PEAK',
-    color: 'red',
-    description: 'Maximum effort training'
-  }
+    name: "PEAK",
+    color: "red",
+    description: "Maximum effort training",
+  },
 ];
 
-export const calculateHeartRateZone = (heartRate: number, zones: HeartRateZone[] = defaultHeartRateZones): number => {
+export const calculateHeartRateZone = (
+  heartRate: number,
+  zones: HeartRateZone[] = defaultHeartRateZones,
+): number => {
   for (let i = 0; i < zones.length; i++) {
     if (heartRate >= zones[i].min && heartRate <= zones[i].max) {
       return i + 1;
@@ -47,6 +50,6 @@ export const calculateHeartRateZone = (heartRate: number, zones: HeartRateZone[]
 };
 
 export const getZoneColor = (zone: number): string => {
-  const colors = ['blue', 'green', 'orange', 'red'];
-  return colors[zone - 1] || 'blue';
+  const colors = ["blue", "green", "orange", "red"];
+  return colors[zone - 1] || "blue";
 };

@@ -1,6 +1,5 @@
-import React from 'react';
-// import { Settings, Play, Square, Heart, Users } from 'lucide-react';
-import { Settings, Play, Square, Heart, Users, X } from 'lucide-react';
+import React from "react";
+import { Settings, Play, Square, Users, X } from "lucide-react";
 
 interface HeaderProps {
   onToggleSettings: () => void;
@@ -29,8 +28,8 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center justify-between relative">
         {/* Logo and Title */}
         <div className="flex items-center space-x-3">
-          <div className="bg-red-500 p-2 rounded-lg">
-            <Heart className="w-6 h-6 text-white" fill="currentColor" />
+          <div className="bg-gray-700 p-2 rounded-lg">
+            <img src="/assets/logo.svg" alt="Logo" className="w-6 h-6" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">Heart Rate Monitor</h1>
@@ -53,9 +52,10 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={isScanning ? onStopScanning : onStartScanning}
             className={`
               flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors
-              ${isScanning 
-                ? 'bg-red-500 hover:bg-red-600 text-white' 
-                : 'bg-green-500 hover:bg-green-600 text-white'
+              ${
+                isScanning
+                  ? "bg-red-500 hover:bg-red-600 text-white"
+                  : "bg-green-500 hover:bg-green-600 text-white"
               }
             `}
           >

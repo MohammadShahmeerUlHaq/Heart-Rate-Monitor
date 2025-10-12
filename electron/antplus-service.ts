@@ -1,6 +1,6 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from "events";
 // import * as Ant from 'ant-plus';
-const Ant = require('ant-plus');
+const Ant = require("ant-plus");
 
 export interface HeartRateDevice {
   id: string;
@@ -36,25 +36,24 @@ export class AntPlusService extends EventEmitter {
     try {
       // Initialize ANT+ USB stick
       const stickOptions = {
-        debug: false
+        debug: false,
       };
 
       this.stick = new Ant.GarminStick3(stickOptions);
-      
-      this.stick.on('startup', () => {
-        console.log('ANT+ stick initialized successfully');
+
+      this.stick.on("startup", () => {
+        console.log("ANT+ stick initialized successfully");
         this.scanForDevices();
       });
 
-      this.stick.on('shutdown', () => {
-        console.log('ANT+ stick shutdown');
+      this.stick.on("shutdown", () => {
+        console.log("ANT+ stick shutdown");
         this.isScanning = false;
       });
 
       this.isScanning = true;
-      
     } catch (error: unknown) {
-      console.error('Failed to initialize ANT+ stick:', error);
+      console.error("Failed to initialize ANT+ stick:", error);
       const message = error instanceof Error ? error.message : String(error);
       throw new Error(`ANT+ initialization failed: ${message}`);
     }
@@ -62,23 +61,23 @@ export class AntPlusService extends EventEmitter {
 
   async stopScanning(): Promise<void> {
     this.isScanning = false;
-    
+
     // Close all sensors
     for (const sensor of this.sensors.values()) {
       try {
         sensor.detach();
       } catch (error) {
-        console.error('Error detaching sensor:', error);
+        console.error("Error detaching sensor:", error);
       }
     }
-    
+
     this.sensors.clear();
-    
+
     if (this.stick) {
       try {
         this.stick.close();
       } catch (error) {
-        console.error('Error closing ANT+ stick:', error);
+        console.error("Error closing ANT+ stick:", error);
       }
       this.stick = null;
     }
@@ -90,25 +89,25 @@ export class AntPlusService extends EventEmitter {
     try {
       // Scan for heart rate sensors (device type 120)
       const heartRateScanState = new Ant.HeartRateScanState(this.stick);
-      
-      heartRateScanState.on('hbData', (data: any) => {
+
+      heartRateScanState.on("hbData", (data: any) => {
         this.handleHeartRateData(data);
       });
 
-      heartRateScanState.on('attached', (data: any) => {
-        console.log('Heart rate sensor attached:', data);
+      heartRateScanState.on("attached", (data: any) => {
+        console.log("Heart rate sensor attached:", data);
         this.handleDeviceAttached(data);
       });
 
-      heartRateScanState.on('detached', (data: any) => {
-        console.log('Heart rate sensor detached:', data);
+      heartRateScanState.on("detached", (data: any) => {
+        console.log("Heart rate sensor detached:", data);
         this.handleDeviceDetached(data);
       });
 
       // Also set up individual sensor connections for better reliability
       this.setupIndividualSensors();
     } catch (error) {
-      console.error('Error setting up heart rate scanning:', error);
+      console.error("Error setting up heart rate scanning:", error);
     }
   }
 
@@ -117,16 +116,16 @@ export class AntPlusService extends EventEmitter {
     for (let deviceNumber = 0; deviceNumber < 20; deviceNumber++) {
       try {
         const sensor = new Ant.HeartRateSensor(this.stick);
-        
-        sensor.on('hbData', (data: any) => {
+
+        sensor.on("hbData", (data: any) => {
           this.handleHeartRateData({ ...data, deviceNumber });
         });
 
-        sensor.on('attached', (data: any) => {
+        sensor.on("attached", (data: any) => {
           this.handleDeviceAttached({ ...data, deviceNumber });
         });
 
-        sensor.on('detached', (data: any) => {
+        sensor.on("detached", (data: any) => {
           this.handleDeviceDetached({ ...data, deviceNumber });
         });
 
@@ -138,13 +137,15 @@ export class AntPlusService extends EventEmitter {
   }
 
   private handleHeartRateData(data: any): void {
-    const deviceId = data.deviceId?.toString() || `device_${data.deviceNumber || 0}`;
-    const heartRate = data.ComputedHeartRate || data.heartRate || data.HeartRate || 0;
-    
+    const deviceId =
+      data.deviceId?.toString() || `device_${data.deviceNumber || 0}`;
+    const heartRate =
+      data.ComputedHeartRate || data.heartRate || data.HeartRate || 0;
+
     if (heartRate === 0) return;
 
     let device = this.devices.get(deviceId);
-    
+
     if (!device) {
       device = {
         id: deviceId,
@@ -153,10 +154,10 @@ export class AntPlusService extends EventEmitter {
         lastUpdate: new Date(),
         connected: true,
         calories: 0,
-        zone: 1
+        zone: 1,
       };
       this.devices.set(deviceId, device);
-      this.emit('deviceConnected', device);
+      this.emit("deviceConnected", device);
     }
 
     // Update device data
@@ -165,7 +166,7 @@ export class AntPlusService extends EventEmitter {
     device.lastUpdate = new Date();
     device.connected = true;
     device.zone = this.calculateHeartRateZone(heartRate);
-    
+
     // Simple calorie estimation (very basic)
     if (previousHeartRate > 0) {
       const timeDiff = (Date.now() - device.lastUpdate.getTime()) / 1000 / 60; // minutes
@@ -176,18 +177,19 @@ export class AntPlusService extends EventEmitter {
     const heartRateData: HeartRateData = {
       deviceId,
       heartRate,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
-    this.emit('heartRateData', heartRateData);
+    this.emit("heartRateData", heartRateData);
   }
 
   private handleDeviceAttached(data: any): void {
-    const deviceId = data.deviceId?.toString() || `device_${data.deviceNumber || 0}`;
+    const deviceId =
+      data.deviceId?.toString() || `device_${data.deviceNumber || 0}`;
     console.log(`Device attached: ${deviceId}`);
-    
+
     let device = this.devices.get(deviceId);
-    
+
     if (!device) {
       device = {
         id: deviceId,
@@ -196,24 +198,25 @@ export class AntPlusService extends EventEmitter {
         lastUpdate: new Date(),
         connected: true,
         calories: 0,
-        zone: 1
+        zone: 1,
       };
       this.devices.set(deviceId, device);
     } else {
       device.connected = true;
     }
 
-    this.emit('deviceConnected', device);
+    this.emit("deviceConnected", device);
   }
 
   private handleDeviceDetached(data: any): void {
-    const deviceId = data.deviceId?.toString() || `device_${data.deviceNumber || 0}`;
+    const deviceId =
+      data.deviceId?.toString() || `device_${data.deviceNumber || 0}`;
     console.log(`Device detached: ${deviceId}`);
-    
+
     const device = this.devices.get(deviceId);
     if (device) {
       device.connected = false;
-      this.emit('deviceDisconnected', deviceId);
+      this.emit("deviceDisconnected", deviceId);
     }
   }
 

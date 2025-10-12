@@ -14,7 +14,8 @@ export const calculateCalories = (params: CalorieCalculationParams): number => {
   if (!heartRate || !age || !weight) return 0;
 
   // Calculate calories burned per minute
-  const caloriesPerMinute = (heartRate * 0.6309 + weight * 0.1988 + age * 0.2017 - 55.0969) / 4.184;
+  const caloriesPerMinute =
+    (heartRate * 0.6309 + weight * 0.1988 + age * 0.2017 - 55.0969) / 4.184;
 
   // Return calories burned per minute
   return Math.max(0, caloriesPerMinute);

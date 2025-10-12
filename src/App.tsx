@@ -19,7 +19,11 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false);
-  const [finalUserStats, setFinalUserStats] = useState<Map<string, UserSessionStats> | null>(null);
+  const [isSessionPaused, setIsSessionPaused] = useState(false);
+  const [finalUserStats, setFinalUserStats] = useState<Map<
+    string,
+    UserSessionStats
+  > | null>(null);
 
   const [connectionStatus, setConnectionStatus] = useState<
     "disconnected" | "connecting" | "connected"
@@ -33,22 +37,30 @@ function App() {
           const updated = prev.map((device) => {
             if (device.id !== data.deviceId) return device;
 
-            const settings = JSON.parse(localStorage.getItem("participantSettings") || "{}")[
-              device.id
-            ];
+            const settings = JSON.parse(
+              localStorage.getItem("participantSettings") || "{}"
+            )[device.id];
 
             // Ensure timestamps are properly handled as Date objects
             const currentTimestamp = new Date(data.timestamp);
-            const lastUpdate = device.lastUpdate ? new Date(device.lastUpdate) : currentTimestamp;
+            const lastUpdate = device.lastUpdate
+              ? new Date(device.lastUpdate)
+              : currentTimestamp;
             const timeDiffMinutes =
               (currentTimestamp.getTime() - lastUpdate.getTime()) / (1000 * 60);
 
             // Initialize values, ensuring they're numbers
-            let newCalories = typeof device.calories === "number" ? device.calories : 0;
-            let newBluePoints = typeof device.bluePoints === "number" ? device.bluePoints : 0;
+            let newCalories =
+              typeof device.calories === "number" ? device.calories : 0;
+            let newBluePoints =
+              typeof device.bluePoints === "number" ? device.bluePoints : 0;
 
-            // Only calculate if there's a valid time difference AND session is active
-            if (timeDiffMinutes > 0 && SessionManager.isSessionActive()) {
+            // Only calculate if there's a valid time difference AND session is active AND not paused
+            if (
+              timeDiffMinutes > 0 &&
+              SessionManager.isSessionActive() &&
+              !SessionManager.isSessionPaused()
+            ) {
               // console.log("Hello", settings)
               // console.log(settings?.age, settings?.weight)
               if (settings?.age && settings?.weight) {
@@ -74,12 +86,12 @@ function App() {
               lastUpdate: new Date(data.timestamp)
             };
           });
-          
+
           // Update SessionManager with current devices if session is active
           if (SessionManager.isSessionActive()) {
             SessionManager.updateCurrentDevices(updated);
           }
-          
+
           return updated;
         });
       });
@@ -88,27 +100,39 @@ function App() {
         setDevices((prev) => {
           const existing = prev.find((d) => d.id === device.id);
           const updated = existing
-            ? prev.map((d) => (d.id === device.id ? { ...d, connected: true } : d))
-            : [...prev, { ...device, gender: "male", calories: 0, bluePoints: 0 }];
-          
+            ? prev.map((d) =>
+                d.id === device.id ? { ...d, connected: true } : d
+              )
+            : [
+                ...prev,
+                {
+                  ...device,
+                  gender: "male" as "male" | "female",
+                  calories: 0,
+                  bluePoints: 0
+                }
+              ];
+
           // Update SessionManager with current devices if session is active
           if (SessionManager.isSessionActive()) {
             SessionManager.updateCurrentDevices(updated);
           }
-          
+
           return updated;
         });
       });
 
       window.electronAPI.onDeviceDisconnected((deviceId: string) => {
         setDevices((prev) => {
-          const updated = prev.map((device) => (device.id === deviceId ? { ...device, connected: false } : device));
-          
+          const updated = prev.map((device) =>
+            device.id === deviceId ? { ...device, connected: false } : device
+          );
+
           // Update SessionManager with current devices if session is active
           if (SessionManager.isSessionActive()) {
             SessionManager.updateCurrentDevices(updated);
           }
-          
+
           return updated;
         });
       });
@@ -124,12 +148,12 @@ function App() {
           name: settings[device.id]?.name || device.name,
           gender: settings[device.id]?.gender || "male"
         }));
-        
+
         // Update SessionManager with current devices if session is active
         if (SessionManager.isSessionActive()) {
           SessionManager.updateCurrentDevices(updated);
         }
-        
+
         return updated;
       });
     }
@@ -161,23 +185,28 @@ function App() {
   };
 
   const saveDeviceSettings = (updatedDevices: HeartRateDevice[]) => {
-    const settings = updatedDevices.reduce((acc, device) => {
-      acc[device.id] = { name: device.name, gender: device.gender };
-      return acc;
-    }, {} as Record<string, { name: string; gender: "male" | "female" }>);
+    const settings = updatedDevices.reduce(
+      (acc, device) => {
+        acc[device.id] = { name: device.name, gender: device.gender };
+        return acc;
+      },
+      {} as Record<string, { name: string; gender: "male" | "female" }>
+    );
     localStorage.setItem("deviceSettings", JSON.stringify(settings));
   };
 
   const updateDeviceName = (deviceId: string, name: string) => {
     setDevices((prev) => {
-      const updated = prev.map((device) => (device.id === deviceId ? { ...device, name } : device));
+      const updated = prev.map((device) =>
+        device.id === deviceId ? { ...device, name } : device
+      );
       saveDeviceSettings(updated);
-      
+
       // Update SessionManager with current devices if session is active
       if (SessionManager.isSessionActive()) {
         SessionManager.updateCurrentDevices(updated);
       }
-      
+
       return updated;
     });
   };
@@ -188,21 +217,26 @@ function App() {
         device.id === deviceId ? { ...device, gender } : device
       );
       saveDeviceSettings(updated);
-      
+
       // Update SessionManager with current devices if session is active
       if (SessionManager.isSessionActive()) {
         SessionManager.updateCurrentDevices(updated);
       }
-      
+
       return updated;
     });
   };
 
-  const validateUserSettings = (): { isValid: boolean; missingUsers: string[] } => {
-    const participantSettings = JSON.parse(localStorage.getItem("participantSettings") || "{}");
+  const validateUserSettings = (): {
+    isValid: boolean;
+    missingUsers: string[];
+  } => {
+    const participantSettings = JSON.parse(
+      localStorage.getItem("participantSettings") || "{}"
+    );
     const missingUsers: string[] = [];
 
-    devices.forEach(device => {
+    devices.forEach((device) => {
       const settings = participantSettings[device.id];
       if (!settings || !settings.name || !settings.email || !settings.gender) {
         missingUsers.push(device.name || `Device ${device.id}`);
@@ -217,9 +251,11 @@ function App() {
 
   const handleStartSession = async () => {
     const validation = validateUserSettings();
-    
+
     if (!validation.isValid) {
-      alert(`Please complete settings for the following users:\n${validation.missingUsers.join('\n')}\n\nGo to Settings to add missing name, email, and gender information.`);
+      alert(
+        `Please complete settings for the following users:\n${validation.missingUsers.join("\n")}\n\nGo to Settings to add missing name, email, and gender information.`
+      );
       setShowSettings(true);
       return;
     }
@@ -227,19 +263,31 @@ function App() {
     try {
       // Initialize database
       await DatabaseService.initializeDatabase();
-      
+
       // Start session
       // Reset per-device counters before starting
-      setDevices((prev) => prev.map((d) => ({ ...d, calories: 0, bluePoints: 0 })));
+      setDevices((prev) =>
+        prev.map((d) => ({ ...d, calories: 0, bluePoints: 0 }))
+      );
       SessionManager.startSession(devices);
       setIsSessionActive(true);
       setFinalUserStats(null);
-      
-      console.log('Session started successfully');
+
+      console.log("Session started successfully");
     } catch (error) {
-      console.error('Failed to start session:', error);
-      alert('Failed to start session. Please check your database connection.');
+      console.error("Failed to start session:", error);
+      alert("Failed to start session. Please check your database connection.");
     }
+  };
+
+  const handlePauseSession = () => {
+    SessionManager.pauseSession();
+    setIsSessionPaused(true);
+  };
+
+  const handleResumeSession = () => {
+    SessionManager.resumeSession();
+    setIsSessionPaused(false);
   };
 
   const handleStopSession = async () => {
@@ -247,48 +295,62 @@ function App() {
       // Stop session and get data
       const sessionEndTime = SessionManager.stopSession();
       setIsSessionActive(false);
-      
+      setIsSessionPaused(false);
+
       if (!sessionEndTime) {
-        console.error('No session was active');
+        console.error("No session was active");
         return;
       }
 
       // Get participant settings
-      const participantSettings = JSON.parse(localStorage.getItem("participantSettings") || "{}");
-      
+      const participantSettings = JSON.parse(
+        localStorage.getItem("participantSettings") || "{}"
+      );
+
       // Generate session data for each user
-      const sessionDataArray = SessionManager.generateSessionData(devices, participantSettings);
+      const sessionDataArray = SessionManager.generateSessionData(
+        devices,
+        participantSettings
+      );
       // Snapshot final per-user stats for on-screen summary before clearing
       const snapshotStats = SessionManager.calculateUserStats(devices);
       setFinalUserStats(snapshotStats);
-      
+
       // Process each user's data
       for (const sessionData of sessionDataArray) {
         try {
           // Save to database
           const sessionId = await DatabaseService.saveSessionData(sessionData);
-          console.log(`Session data saved for ${sessionData.name} with ID: ${sessionId}`);
-          
+          console.log(
+            `Session data saved for ${sessionData.name} with ID: ${sessionId}`
+          );
+
           // Generate chart
-          const chartImageBase64 = await ChartGenerator.generateSessionChart(sessionData);
-          
+          const chartImageBase64 =
+            await ChartGenerator.generateSessionChart(sessionData);
+
           // Send email
           await EmailService.sendSessionReport(sessionData, chartImageBase64);
           console.log(`Email sent to ${sessionData.email}`);
-          
         } catch (error) {
-          console.error(`Failed to process data for ${sessionData.name}:`, error);
+          console.error(
+            `Failed to process data for ${sessionData.name}:`,
+            error
+          );
         }
       }
-      
+
       // Clear session data
       SessionManager.clearSessionData();
-      
-      alert('Session completed! Data has been saved and emails have been sent to all participants.');
-      
+
+      alert(
+        "Session completed! Data has been saved and emails have been sent to all participants."
+      );
     } catch (error) {
-      console.error('Failed to stop session:', error);
-      alert('Failed to complete session processing. Some data may not have been saved.');
+      console.error("Failed to stop session:", error);
+      alert(
+        "Failed to complete session processing. Some data may not have been saved."
+      );
     }
   };
 
@@ -319,8 +381,11 @@ function App() {
           <Dashboard
             devices={devices}
             isSessionActive={isSessionActive}
+            isSessionPaused={isSessionPaused}
             onStartSession={handleStartSession}
             onStopSession={handleStopSession}
+            onPauseSession={handlePauseSession}
+            onResumeSession={handleResumeSession}
             finalUserStats={finalUserStats}
           />
         )}

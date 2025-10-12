@@ -15,7 +15,7 @@ export class ParticipantSettingsManager {
       return JSON.parse(stored);
     }
     return {
-      maxHeartRate: 0 // Initialize with 0 to indicate no max HR set yet
+      maxHeartRate: 0, // Initialize with 0 to indicate no max HR set yet
     };
   }
 

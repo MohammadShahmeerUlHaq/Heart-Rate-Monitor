@@ -16,12 +16,14 @@ A professional-grade desktop application for real-time heart rate monitoring in 
 ## 📋 Requirements
 
 ### Hardware
+
 - ANT+ USB dongle (e.g., Coospo, Garmin)
 - ANT+ compatible heart rate monitors
 - Computer with USB port
 - Optional: Large TV/monitor for group display
 
 ### Software
+
 - Windows 10+ or macOS 10.14+
 - USB drivers for ANT+ dongle
 
@@ -35,10 +37,12 @@ A professional-grade desktop application for real-time heart rate monitoring in 
 ### Install ANT+ Drivers
 
 #### Windows
+
 - ANT+ drivers are usually installed automatically
 - If issues occur, download from [ANT+ official website](https://www.thisisant.com/developer/resources/downloads/)
 
 #### macOS
+
 - Install libusb: `brew install libusb`
 - You may need to allow the app in System Preferences > Security & Privacy
 
@@ -69,10 +73,12 @@ A professional-grade desktop application for real-time heart rate monitoring in 
 ## 🛠️ Development
 
 ### Prerequisites
+
 - Node.js 18+
 - npm or yarn
 
 ### Setup
+
 ```bash
 git clone <repository-url>
 cd heart-rate-monitor
@@ -81,11 +87,13 @@ cd electron && npm install
 ```
 
 ### Development Mode
+
 ```bash
 npm run dev
 ```
 
 ### Building
+
 ```bash
 # Build for current platform
 npm run dist

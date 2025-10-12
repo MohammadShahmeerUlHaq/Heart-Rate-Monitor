@@ -10,19 +10,22 @@ interface ParticipantSettings {
   weight: number;
 }
 
-const defaultProfiles: Record<"male" | "female", Omit<ParticipantSettings, "name">> = {
+const defaultProfiles: Record<
+  "male" | "female",
+  Omit<ParticipantSettings, "name">
+> = {
   male: {
     gender: "male",
     email: "",
     age: 40, // Average adult male age in US
-    weight: 88.3 // Average adult male weight in kg in US
+    weight: 88.3, // Average adult male weight in kg in US
   },
   female: {
     gender: "female",
     email: "",
     age: 40, // Average adult female age in US
-    weight: 76.4 // Average adult female weight in kg in US
-  }
+    weight: 76.4, // Average adult female weight in kg in US
+  },
 };
 
 interface SettingsProps {
@@ -36,23 +39,30 @@ export const Settings: React.FC<SettingsProps> = ({
   devices,
   onUpdateDeviceName,
   onUpdateDeviceGender,
-  onClose
+  onClose,
 }) => {
-  const [localSettings, setLocalSettings] = useState<Record<string, ParticipantSettings>>(() => {
+  const [localSettings, setLocalSettings] = useState<
+    Record<string, ParticipantSettings>
+  >(() => {
     const savedSettings = localStorage.getItem("participantSettings");
-    const initialSettings = devices.reduce((acc, device) => {
-      const gender = device.gender || "male";
-      acc[device.id] = {
-        name: device.name,
-        gender,
-        email: "",
-        age: defaultProfiles[gender].age,
-        weight: defaultProfiles[gender].weight
-      };
-      return acc;
-    }, {} as Record<string, ParticipantSettings>);
+    const initialSettings = devices.reduce(
+      (acc, device) => {
+        const gender = device.gender || "male";
+        acc[device.id] = {
+          name: device.name,
+          gender,
+          email: "",
+          age: defaultProfiles[gender].age,
+          weight: defaultProfiles[gender].weight,
+        };
+        return acc;
+      },
+      {} as Record<string, ParticipantSettings>,
+    );
 
-    return savedSettings ? { ...initialSettings, ...JSON.parse(savedSettings) } : initialSettings;
+    return savedSettings
+      ? { ...initialSettings, ...JSON.parse(savedSettings) }
+      : initialSettings;
   });
 
   const handleSave = () => {
@@ -78,8 +88,12 @@ export const Settings: React.FC<SettingsProps> = ({
               <Monitor className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white tracking-tight">Settings</h1>
-              <p className="text-gray-400 mt-1">Customize your workout experience</p>
+              <h1 className="text-3xl font-bold text-white tracking-tight">
+                Settings
+              </h1>
+              <p className="text-gray-400 mt-1">
+                Customize your workout experience
+              </p>
             </div>
           </div>
           <button
@@ -102,8 +116,12 @@ export const Settings: React.FC<SettingsProps> = ({
               <div className="text-center py-12 px-6">
                 <div className="bg-gray-700/50 rounded-2xl p-8 inline-block">
                   <Users className="w-16 h-16 mx-auto mb-4 text-gray-400 opacity-50" />
-                  <p className="text-gray-300 text-lg font-medium mb-2">No Heart Rate Monitors</p>
-                  <p className="text-gray-400">Connect your devices to get started</p>
+                  <p className="text-gray-300 text-lg font-medium mb-2">
+                    No Heart Rate Monitors
+                  </p>
+                  <p className="text-gray-400">
+                    Connect your devices to get started
+                  </p>
                 </div>
               </div>
             ) : (
@@ -125,7 +143,10 @@ export const Settings: React.FC<SettingsProps> = ({
                         onChange={(e) =>
                           setLocalSettings((prev) => ({
                             ...prev,
-                            [device.id]: { ...prev[device.id], name: e.target.value }
+                            [device.id]: {
+                              ...prev[device.id],
+                              name: e.target.value,
+                            },
                           }))
                         }
                         className="w-full bg-transparent border-b border-gray-600 hover:border-gray-500 focus:border-blue-500 text-white text-lg font-medium placeholder-gray-500 pb-2 focus:outline-none transition-colors"
@@ -137,7 +158,10 @@ export const Settings: React.FC<SettingsProps> = ({
                         onChange={(e) =>
                           setLocalSettings((prev) => ({
                             ...prev,
-                            [device.id]: { ...prev[device.id], email: e.target.value }
+                            [device.id]: {
+                              ...prev[device.id],
+                              email: e.target.value,
+                            },
                           }))
                         }
                         className="w-full bg-transparent border-b border-gray-600 hover:border-gray-500 focus:border-blue-500 text-white text-base placeholder-gray-500 pb-2 focus:outline-none transition-colors"
@@ -147,15 +171,17 @@ export const Settings: React.FC<SettingsProps> = ({
                         <select
                           value={localSettings[device.id].gender}
                           onChange={(e) => {
-                            const newGender = e.target.value as "male" | "female";
+                            const newGender = e.target.value as
+                              | "male"
+                              | "female";
                             setLocalSettings((prev) => ({
                               ...prev,
                               [device.id]: {
                                 ...prev[device.id],
                                 gender: newGender,
                                 age: defaultProfiles[newGender].age,
-                                weight: defaultProfiles[newGender].weight
-                              }
+                                weight: defaultProfiles[newGender].weight,
+                              },
                             }));
                           }}
                           className="w-24 bg-gray-600/50 border border-gray-500 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500 cursor-pointer hover:bg-gray-600 transition-colors"
@@ -174,8 +200,8 @@ export const Settings: React.FC<SettingsProps> = ({
                                   ...prev,
                                   [device.id]: {
                                     ...prev[device.id],
-                                    age: parseInt(e.target.value) || 0
-                                  }
+                                    age: parseInt(e.target.value) || 0,
+                                  },
                                 }))
                               }
                               min="0"
@@ -194,8 +220,8 @@ export const Settings: React.FC<SettingsProps> = ({
                                   ...prev,
                                   [device.id]: {
                                     ...prev[device.id],
-                                    weight: parseFloat(e.target.value) || 0
-                                  }
+                                    weight: parseFloat(e.target.value) || 0,
+                                  },
                                 }))
                               }
                               step="0.1"
@@ -207,7 +233,9 @@ export const Settings: React.FC<SettingsProps> = ({
                           </div>
                         </div>
                         <div className="h-6 w-px bg-gray-600" />
-                        <p className="text-xs text-gray-500 font-mono">ID: {device.id}</p>
+                        <p className="text-xs text-gray-500 font-mono">
+                          ID: {device.id}
+                        </p>
                       </div>
                     </div>
                   </div>
