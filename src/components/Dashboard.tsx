@@ -127,7 +127,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <Footer
         classBluePoints={classStats.totalBluePoints}
         classCalories={classStats.totalCalories}
-        coachName="Jared"
         classTime={classStats.elapsedTime}
         isSessionActive={isSessionActive}
         isSessionPaused={isSessionPaused}

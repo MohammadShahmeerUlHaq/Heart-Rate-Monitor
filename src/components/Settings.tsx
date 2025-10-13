@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+// Settings.tsx
+import React, { useEffect, useState, useRef } from "react"; // <-- added useRef
 import { X, Save, Users, Monitor } from "lucide-react";
-import { HeartRateDevice } from "../types/electron";
+import type { HeartRateDevice } from "../types/electron";
 
 interface ParticipantSettings {
   name: string;
@@ -14,18 +15,8 @@ const defaultProfiles: Record<
   "male" | "female",
   Omit<ParticipantSettings, "name">
 > = {
-  male: {
-    gender: "male",
-    email: "",
-    age: 40, // Average adult male age in US
-    weight: 88.3, // Average adult male weight in kg in US
-  },
-  female: {
-    gender: "female",
-    email: "",
-    age: 40, // Average adult female age in US
-    weight: 76.4, // Average adult female weight in kg in US
-  },
+  male: { gender: "male", email: "", age: 40, weight: 88.3 },
+  female: { gender: "female", email: "", age: 40, weight: 76.4 }
 };
 
 interface SettingsProps {
@@ -39,41 +30,108 @@ export const Settings: React.FC<SettingsProps> = ({
   devices,
   onUpdateDeviceName,
   onUpdateDeviceGender,
-  onClose,
+  onClose
 }) => {
   const [localSettings, setLocalSettings] = useState<
     Record<string, ParticipantSettings>
-  >(() => {
-    const savedSettings = localStorage.getItem("participantSettings");
-    const initialSettings = devices.reduce(
-      (acc, device) => {
-        const gender = device.gender || "male";
-        acc[device.id] = {
-          name: device.name,
-          gender,
-          email: "",
-          age: defaultProfiles[gender].age,
-          weight: defaultProfiles[gender].weight,
-        };
-        return acc;
-      },
-      {} as Record<string, ParticipantSettings>,
-    );
+  >({});
 
-    return savedSettings
-      ? { ...initialSettings, ...JSON.parse(savedSettings) }
-      : initialSettings;
-  });
+  const initialized = useRef(false); // <-- added ref
+
+  // Initialize (or merge) settings only once
+  useEffect(() => {
+    if (initialized.current) return; // <-- prevent overwriting live edits
+    initialized.current = true;
+
+    setLocalSettings((prev) => {
+      let parsedSaved: Record<string, ParticipantSettings> = {};
+      try {
+        const raw = localStorage.getItem("participantSettings");
+        parsedSaved = raw ? JSON.parse(raw) : {};
+      } catch {
+        parsedSaved = {};
+      }
+
+      const next: Record<string, ParticipantSettings> = {};
+      devices.forEach((device) => {
+        const id = device.id;
+        const deviceGender = device.gender || "male";
+
+        if (prev[id]) {
+          next[id] = prev[id];
+        } else if (parsedSaved[id]) {
+          next[id] = parsedSaved[id];
+        } else {
+          next[id] = {
+            name: device.name ?? "",
+            gender: deviceGender,
+            email: "",
+            age: defaultProfiles[deviceGender].age,
+            weight: defaultProfiles[deviceGender].weight
+          };
+        }
+      });
+
+      return next;
+    });
+  }, [devices]);
+
+  const updateField = <K extends keyof ParticipantSettings>(
+    deviceId: string,
+    field: K,
+    value: ParticipantSettings[K]
+  ) => {
+    setLocalSettings((prev) => {
+      const current = prev[deviceId];
+      if (!current) return prev;
+      return {
+        ...prev,
+        [deviceId]: { ...current, [field]: value }
+      };
+    });
+  };
+
+  const handleGenderChange = (
+    deviceId: string,
+    newGender: "male" | "female"
+  ) => {
+    setLocalSettings((prev) => {
+      const cur = prev[deviceId];
+      if (!cur) return prev;
+
+      const prevGender = cur.gender;
+      const shouldResetAge = cur.age === defaultProfiles[prevGender].age;
+      const shouldResetWeight =
+        cur.weight === defaultProfiles[prevGender].weight;
+
+      return {
+        ...prev,
+        [deviceId]: {
+          ...cur,
+          gender: newGender,
+          age: shouldResetAge ? defaultProfiles[newGender].age : cur.age,
+          weight: shouldResetWeight
+            ? defaultProfiles[newGender].weight
+            : cur.weight
+        }
+      };
+    });
+  };
 
   const handleSave = () => {
-    // Update device names and genders
     Object.entries(localSettings).forEach(([deviceId, settings]) => {
       onUpdateDeviceName(deviceId, settings.name);
       onUpdateDeviceGender(deviceId, settings.gender);
     });
 
-    // Save all settings
-    localStorage.setItem("participantSettings", JSON.stringify(localSettings));
+    try {
+      localStorage.setItem(
+        "participantSettings",
+        JSON.stringify(localSettings)
+      );
+    } catch (e) {
+      console.warn("Failed to persist participantSettings:", e);
+    }
 
     onClose();
   };
@@ -126,120 +184,99 @@ export const Settings: React.FC<SettingsProps> = ({
               </div>
             ) : (
               <div className="space-y-3 max-h-[calc(100vh-20rem)] overflow-y-auto pr-2 scroll-smooth">
-                {devices.map((device) => (
-                  <div
-                    key={device.id}
-                    className="flex items-center space-x-3 p-4 bg-gray-700/50 rounded-xl"
-                  >
+                {devices.map((device) => {
+                  const s = localSettings[device.id];
+                  if (!s) return null;
+
+                  return (
                     <div
-                      className={`w-2 h-2 rounded-full ${
-                        device.connected ? "bg-green-400" : "bg-gray-500"
-                      }`}
-                    />
-                    <div className="flex-1 space-y-3">
-                      <input
-                        type="text"
-                        value={localSettings[device.id].name}
-                        onChange={(e) =>
-                          setLocalSettings((prev) => ({
-                            ...prev,
-                            [device.id]: {
-                              ...prev[device.id],
-                              name: e.target.value,
-                            },
-                          }))
-                        }
-                        className="w-full bg-transparent border-b border-gray-600 hover:border-gray-500 focus:border-blue-500 text-white text-lg font-medium placeholder-gray-500 pb-2 focus:outline-none transition-colors"
-                        placeholder="Enter participant name"
+                      key={device.id}
+                      className="flex items-center space-x-3 p-4 bg-gray-700/50 rounded-xl"
+                    >
+                      <div
+                        className={`w-2 h-2 rounded-full ${device.connected ? "bg-green-400" : "bg-gray-500"}`}
                       />
-                      <input
-                        type="email"
-                        value={localSettings[device.id].email}
-                        onChange={(e) =>
-                          setLocalSettings((prev) => ({
-                            ...prev,
-                            [device.id]: {
-                              ...prev[device.id],
-                              email: e.target.value,
-                            },
-                          }))
-                        }
-                        className="w-full bg-transparent border-b border-gray-600 hover:border-gray-500 focus:border-blue-500 text-white text-base placeholder-gray-500 pb-2 focus:outline-none transition-colors"
-                        placeholder="Enter email address"
-                      />
-                      <div className="flex items-center space-x-4">
-                        <select
-                          value={localSettings[device.id].gender}
-                          onChange={(e) => {
-                            const newGender = e.target.value as
-                              | "male"
-                              | "female";
-                            setLocalSettings((prev) => ({
-                              ...prev,
-                              [device.id]: {
-                                ...prev[device.id],
-                                gender: newGender,
-                                age: defaultProfiles[newGender].age,
-                                weight: defaultProfiles[newGender].weight,
-                              },
-                            }));
-                          }}
-                          className="w-24 bg-gray-600/50 border border-gray-500 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500 cursor-pointer hover:bg-gray-600 transition-colors"
-                        >
-                          <option value="male">Male</option>
-                          <option value="female">Female</option>
-                        </select>
-                        <div className="h-6 w-px bg-gray-600" />
-                        <div className="flex items-center space-x-3">
-                          <div className="space-x-2 flex items-center">
-                            <input
-                              type="number"
-                              value={localSettings[device.id].age}
-                              onChange={(e) =>
-                                setLocalSettings((prev) => ({
-                                  ...prev,
-                                  [device.id]: {
-                                    ...prev[device.id],
-                                    age: parseInt(e.target.value) || 0,
-                                  },
-                                }))
-                              }
-                              min="0"
-                              max="120"
-                              className="w-16 bg-gray-600/50 border border-gray-500 rounded-lg px-2 py-1 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
-                            />
-                            <span className="text-sm text-gray-400">yrs</span>
+                      <div className="flex-1 space-y-3">
+                        <input
+                          type="text"
+                          value={s.name}
+                          onChange={(e) =>
+                            updateField(device.id, "name", e.target.value)
+                          }
+                          className="w-full bg-transparent border-b border-gray-600 hover:border-gray-500 focus:border-blue-500 text-white text-lg font-medium placeholder-gray-500 pb-2 focus:outline-none transition-colors"
+                          placeholder="Enter participant name"
+                        />
+                        <input
+                          type="email"
+                          value={s.email}
+                          onChange={(e) =>
+                            updateField(device.id, "email", e.target.value)
+                          }
+                          className="w-full bg-transparent border-b border-gray-600 hover:border-gray-500 focus:border-blue-500 text-white text-base placeholder-gray-500 pb-2 focus:outline-none transition-colors"
+                          placeholder="Enter email address"
+                        />
+                        <div className="flex items-center space-x-4">
+                          <select
+                            value={s.gender}
+                            onChange={(e) =>
+                              handleGenderChange(
+                                device.id,
+                                e.target.value as "male" | "female"
+                              )
+                            }
+                            className="w-24 bg-gray-600/50 border border-gray-500 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500 cursor-pointer hover:bg-gray-600 transition-colors"
+                          >
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                          </select>
+                          <div className="h-6 w-px bg-gray-600" />
+                          <div className="flex items-center space-x-3">
+                            <div className="space-x-2 flex items-center">
+                              <input
+                                type="number"
+                                value={s.age}
+                                onChange={(e) =>
+                                  updateField(
+                                    device.id,
+                                    "age",
+                                    parseInt(e.target.value) || 0
+                                  )
+                                }
+                                min={0}
+                                max={120}
+                                className="w-16 bg-gray-600/50 border border-gray-500 rounded-lg px-2 py-1 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                              />
+                              <span className="text-sm text-gray-400">yrs</span>
+                            </div>
+                            <div className="h-4 w-px bg-gray-600" />
+                            <div className="space-x-2 flex items-center">
+                              <input
+                                type="number"
+                                value={s.weight}
+                                onChange={(e) =>
+                                  updateField(
+                                    device.id,
+                                    "weight",
+                                    parseFloat(e.target.value) || 0
+                                  )
+                                }
+                                step={0.1}
+                                min={0}
+                                max={300}
+                                className="w-20 bg-gray-600/50 border border-gray-500 rounded-lg px-2 py-1 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                              />
+                              <span className="text-sm text-gray-400">kg</span>
+                            </div>
                           </div>
-                          <div className="h-4 w-px bg-gray-600" />
-                          <div className="space-x-2 flex items-center">
-                            <input
-                              type="number"
-                              value={localSettings[device.id].weight}
-                              onChange={(e) =>
-                                setLocalSettings((prev) => ({
-                                  ...prev,
-                                  [device.id]: {
-                                    ...prev[device.id],
-                                    weight: parseFloat(e.target.value) || 0,
-                                  },
-                                }))
-                              }
-                              step="0.1"
-                              min="0"
-                              max="300"
-                              className="w-20 bg-gray-600/50 border border-gray-500 rounded-lg px-2 py-1 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
-                            />
-                            <span className="text-sm text-gray-400">kg</span>
-                          </div>
+                          <div className="h-6 w-px bg-gray-600" />
+                          <p className="text-xs text-gray-500 font-mono">
+                            ID: {device.id}
+                          </p>
                         </div>
-                        <div className="h-6 w-px bg-gray-600" />
-                        <p className="text-xs text-gray-500 font-mono">
-                          ID: {device.id}
-                        </p>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -261,3 +298,5 @@ export const Settings: React.FC<SettingsProps> = ({
     </div>
   );
 };
+
+export default Settings;

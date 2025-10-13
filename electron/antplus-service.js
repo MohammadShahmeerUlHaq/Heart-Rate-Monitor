@@ -1,8 +1,8 @@
 const Ant = require("ant-plus");
 const { EventEmitter } = require("events");
 const { MockHRMService } = require("./mock-hrm-service");
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
 class AntPlusService extends EventEmitter {
   constructor({ mockMode = false } = {}) {
@@ -12,19 +12,23 @@ class AntPlusService extends EventEmitter {
     this.sensors = {};
     this.deviceChannelMap = new Map(); // deviceId -> channel
     this.channelSensorMap = new Map(); // channel -> sensor
-    this.deviceChannelMapPath = path.join(__dirname, 'device-channel-map.json');
+    this.deviceChannelMapPath = path.join(__dirname, "device-channel-map.json");
     // load persisted mapping if available
     try {
       if (fs.existsSync(this.deviceChannelMapPath)) {
-        const raw = fs.readFileSync(this.deviceChannelMapPath, 'utf8');
-        const obj = JSON.parse(raw || '{}');
+        const raw = fs.readFileSync(this.deviceChannelMapPath, "utf8");
+        const obj = JSON.parse(raw || "{}");
         for (const [k, v] of Object.entries(obj)) {
           this.deviceChannelMap.set(k, v);
         }
-        if (process.env.DEBUG_ANT) console.log('Loaded deviceChannelMap from disk:', Object.entries(obj));
+        if (process.env.DEBUG_ANT)
+          console.log(
+            "Loaded deviceChannelMap from disk:",
+            Object.entries(obj),
+          );
       }
     } catch (e) {
-      console.error('Failed to load device-channel map:', e);
+      console.error("Failed to load device-channel map:", e);
     }
     this.activeDevices = new Set();
     this.hrSensors = [];
@@ -34,7 +38,7 @@ class AntPlusService extends EventEmitter {
     this.isShuttingDown = false;
     this.mockMode = mockMode;
     this.mockService = mockMode ? new MockHRMService() : null;
-    
+
     // Connection stability tracking
     this.lastConnectionChange = new Map(); // Track last connection change time per device
     this.connectionDebounceMs = 2000; // Debounce connection status changes for 2 seconds
@@ -46,10 +50,14 @@ class AntPlusService extends EventEmitter {
     }
     if (this.mockMode && this.mockService) {
       // Forward all events from mock service
-      this.mockService.on("heartRateData", (data) => this.emit("heartRateData", data));
-      this.mockService.on("deviceConnected", (device) => this.emit("deviceConnected", device));
+      this.mockService.on("heartRateData", (data) =>
+        this.emit("heartRateData", data),
+      );
+      this.mockService.on("deviceConnected", (device) =>
+        this.emit("deviceConnected", device),
+      );
       this.mockService.on("deviceDisconnected", (deviceId) =>
-        this.emit("deviceDisconnected", deviceId)
+        this.emit("deviceDisconnected", deviceId),
       );
 
       this.mockService.startMocking();
@@ -95,7 +103,9 @@ class AntPlusService extends EventEmitter {
       }
       console.error("Failed to initialize ANT+ stick:", error);
       if (error.message === "ANT_DEVICE_NOT_CONNECTED") {
-        throw new Error("ANT+ USB dongle not found! Please ensure it is connected.");
+        throw new Error(
+          "ANT+ USB dongle not found! Please ensure it is connected.",
+        );
       }
       throw new Error(`ANT+ initialization failed: ${error.message}`);
     }
@@ -107,7 +117,7 @@ class AntPlusService extends EventEmitter {
       "a40340010109ee", // Device scan event
       "a40340030109ec", // Device connection event
       "a403400101", // Common heartbeat events
-      "a403400301" // Common data events
+      "a403400301", // Common data events
     ];
 
     const isKnownEvent = knownEvents.some((known) => eventId.startsWith(known));
@@ -121,7 +131,7 @@ class AntPlusService extends EventEmitter {
   addHRSensor(channel) {
     const hrSensor = new Ant.HeartRateSensor(this.stick);
 
-  hrSensor.on("hbdata", async (data) => {
+    hrSensor.on("hbdata", async (data) => {
       // ✅ Defensive check to avoid crashes
       if (!data || typeof data.DeviceID === "undefined") {
         if (process.env.DEBUG_ANT) {
@@ -131,45 +141,105 @@ class AntPlusService extends EventEmitter {
       }
 
       if (process.env.DEBUG_ANT) {
-        console.log(`hbdata chan=${channel} DeviceID=${data.DeviceID} ComputedHR=${data.ComputedHeartRate} payload=`, data);
-        console.log('activeDevices:', Array.from(this.activeDevices));
-        console.log('deviceChannelMap:', Array.from(this.deviceChannelMap.entries()));
+        console.log(
+          `hbdata chan=${channel} DeviceID=${data.DeviceID} ComputedHR=${data.ComputedHeartRate} payload=`,
+          data,
+        );
+        console.log("activeDevices:", Array.from(this.activeDevices));
+        console.log(
+          "deviceChannelMap:",
+          Array.from(this.deviceChannelMap.entries()),
+        );
       }
 
       // First time we see a real DeviceID on a wildcard (0), or when a device shows up again, bind it
-      if (data.DeviceID !== 0 && !this.activeDevices.has(data.DeviceID.toString())) {
+      if (
+        data.DeviceID !== 0 &&
+        !this.activeDevices.has(data.DeviceID.toString())
+      ) {
         const idStr = data.DeviceID.toString();
         console.log(`hbdata: discovered device ${idStr} on channel ${channel}`);
         this.activeDevices.add(idStr);
         try {
           const knownChannel = this.deviceChannelMap.get(idStr);
-          if (typeof knownChannel !== 'undefined' && knownChannel !== channel) {
+          if (typeof knownChannel !== "undefined" && knownChannel !== channel) {
             // Prefer remembered channel
-            if (process.env.DEBUG_ANT) console.log(`hbdata: device ${idStr} has remembered channel ${knownChannel}; attempting rebind there first`);
-            const rebound = await this.attachWithRetry(knownChannel, parseInt(idStr, 10));
+            if (process.env.DEBUG_ANT)
+              console.log(
+                `hbdata: device ${idStr} has remembered channel ${knownChannel}; attempting rebind there first`,
+              );
+            const rebound = await this.attachWithRetry(
+              knownChannel,
+              parseInt(idStr, 10),
+            );
             if (rebound) {
               // update mappings
-              this.channelSensorMap.set(knownChannel, this.channelSensorMap.get(knownChannel) || hrSensor);
+              this.channelSensorMap.set(
+                knownChannel,
+                this.channelSensorMap.get(knownChannel) || hrSensor,
+              );
               this.deviceChannelMap.set(idStr, knownChannel);
-              try { fs.writeFileSync(this.deviceChannelMapPath, JSON.stringify(Object.fromEntries(this.deviceChannelMap)), 'utf8'); } catch(e){}
-              if (process.env.DEBUG_ANT) console.log(`hbdata: rebound device ${idStr} to remembered channel ${knownChannel}`);
+              try {
+                fs.writeFileSync(
+                  this.deviceChannelMapPath,
+                  JSON.stringify(Object.fromEntries(this.deviceChannelMap)),
+                  "utf8",
+                );
+              } catch (e) {}
+              if (process.env.DEBUG_ANT)
+                console.log(
+                  `hbdata: rebound device ${idStr} to remembered channel ${knownChannel}`,
+                );
             } else {
-              if (process.env.DEBUG_ANT) console.log(`hbdata: failed to bind to remembered channel ${knownChannel}, falling back to current channel ${channel}`);
-              try { hrSensor.detach(); hrSensor.attach(channel, data.DeviceID); } catch(e){ if (process.env.DEBUG_ANT) console.error('hbdata: fallback attach failed', e);} 
+              if (process.env.DEBUG_ANT)
+                console.log(
+                  `hbdata: failed to bind to remembered channel ${knownChannel}, falling back to current channel ${channel}`,
+                );
+              try {
+                hrSensor.detach();
+                hrSensor.attach(channel, data.DeviceID);
+              } catch (e) {
+                if (process.env.DEBUG_ANT)
+                  console.error("hbdata: fallback attach failed", e);
+              }
               this.deviceChannelMap.set(idStr, channel);
               this.channelSensorMap.set(channel, hrSensor);
-              try { fs.writeFileSync(this.deviceChannelMapPath, JSON.stringify(Object.fromEntries(this.deviceChannelMap)), 'utf8'); } catch(e){}
+              try {
+                fs.writeFileSync(
+                  this.deviceChannelMapPath,
+                  JSON.stringify(Object.fromEntries(this.deviceChannelMap)),
+                  "utf8",
+                );
+              } catch (e) {}
             }
           } else {
             // No remembered channel or already on that channel - bind current
-            try { hrSensor.detach(); hrSensor.attach(channel, data.DeviceID); } catch(e){ if (process.env.DEBUG_ANT) console.error('hbdata: attach failed', e);} 
+            try {
+              hrSensor.detach();
+              hrSensor.attach(channel, data.DeviceID);
+            } catch (e) {
+              if (process.env.DEBUG_ANT)
+                console.error("hbdata: attach failed", e);
+            }
             this.deviceChannelMap.set(idStr, channel);
             this.channelSensorMap.set(channel, hrSensor);
-            try { fs.writeFileSync(this.deviceChannelMapPath, JSON.stringify(Object.fromEntries(this.deviceChannelMap)), 'utf8'); } catch(e){}
-            if (process.env.DEBUG_ANT) console.log(`hbdata: mapped device ${idStr} -> channel ${channel}`);
+            try {
+              fs.writeFileSync(
+                this.deviceChannelMapPath,
+                JSON.stringify(Object.fromEntries(this.deviceChannelMap)),
+                "utf8",
+              );
+            } catch (e) {}
+            if (process.env.DEBUG_ANT)
+              console.log(
+                `hbdata: mapped device ${idStr} -> channel ${channel}`,
+              );
           }
         } catch (e) {
-          console.error(`hbdata: Failed to bind channel ${channel} for device ${idStr}:`, e);
+          console.error(
+            `hbdata: Failed to bind channel ${channel} for device ${idStr}:`,
+            e,
+          );
         }
       }
 
@@ -187,7 +257,11 @@ class AntPlusService extends EventEmitter {
     });
 
     hrSensor.on("detached", (data) => {
-      if (process.env.DEBUG_ANT) console.log(`Heart rate sensor detached from channel ${channel}:`, data);
+      if (process.env.DEBUG_ANT)
+        console.log(
+          `Heart rate sensor detached from channel ${channel}:`,
+          data,
+        );
       // Some detach events don't include DeviceID; find the mapped device for this channel
       let deviceId = data?.DeviceID?.toString();
       if (!deviceId) {
@@ -201,17 +275,27 @@ class AntPlusService extends EventEmitter {
       }
 
       if (deviceId) {
-        if (process.env.DEBUG_ANT) console.log(`Detached event maps to device ${deviceId}, handling detach.`);
+        if (process.env.DEBUG_ANT)
+          console.log(
+            `Detached event maps to device ${deviceId}, handling detach.`,
+          );
         this.handleDeviceDetached(deviceId);
       } else {
         // If no device mapping, try to reattach this sensor as wildcard so the channel continues scanning
-        if (process.env.DEBUG_ANT) console.log(`No device mapping for channel ${channel}; re-attaching as wildcard.`);
+        if (process.env.DEBUG_ANT)
+          console.log(
+            `No device mapping for channel ${channel}; re-attaching as wildcard.`,
+          );
         try {
           // Use the hrSensor instance to reattach to wildcard
           hrSensor.attach(channel, 0);
           this.channelSensorMap.set(channel, hrSensor);
         } catch (e) {
-          if (process.env.DEBUG_ANT) console.error(`Failed to reattach sensor ${channel} to wildcard after detached:`, e);
+          if (process.env.DEBUG_ANT)
+            console.error(
+              `Failed to reattach sensor ${channel} to wildcard after detached:`,
+              e,
+            );
           // ensure mapping cleaned up so future attach can recreate
           this.channelSensorMap.delete(channel);
         }
@@ -243,7 +327,7 @@ class AntPlusService extends EventEmitter {
 
     let device = this.devices.get(deviceId);
 
-  if (!device) {
+    if (!device) {
       device = {
         id: deviceId,
         name: `Participant ${this.devices.size + 1}`,
@@ -251,20 +335,26 @@ class AntPlusService extends EventEmitter {
         lastUpdate: new Date(),
         connected: true,
         calories: 0,
-        zone: 1
+        zone: 1,
       };
       this.devices.set(deviceId, device);
-  this.calorieTracking.set(deviceId, { lastUpdate: Date.now(), totalCalories: 0 });
+      this.calorieTracking.set(deviceId, {
+        lastUpdate: Date.now(),
+        totalCalories: 0,
+      });
       this.debouncedEmitConnectionChange("deviceConnected", device);
       // device.connected = true;
       // If this device was previously known to have a channel mapping, just track it
       const knownChannel = this.deviceChannelMap.get(deviceId);
-      if (typeof knownChannel !== 'undefined') {
+      if (typeof knownChannel !== "undefined") {
         // Just ensure the device is in active devices, don't rebind unnecessarily
         this.activeDevices.add(deviceId);
-        if (process.env.DEBUG_ANT) console.log(`Device ${deviceId} reconnected on known channel ${knownChannel}`);
+        if (process.env.DEBUG_ANT)
+          console.log(
+            `Device ${deviceId} reconnected on known channel ${knownChannel}`,
+          );
       }
-    } 
+    }
     // else if (!device.connected) {
     //   // Device was previously disconnected but is now sending data again
     //   device.connected = true;
@@ -274,7 +364,7 @@ class AntPlusService extends EventEmitter {
 
     // Update device data
     const now = Date.now();
-  const lastUpdate = this.calorieTracking.get(deviceId)?.lastUpdate || now;
+    const lastUpdate = this.calorieTracking.get(deviceId)?.lastUpdate || now;
     const timeDiffMinutes = (now - lastUpdate) / (1000 * 60);
 
     // Simple calorie calculation based on heart rate
@@ -288,23 +378,35 @@ class AntPlusService extends EventEmitter {
     device.calories += additionalCalories;
 
     // If we have a channel mapping, ensure it's pointing correctly
-    if (!this.deviceChannelMap.has(deviceId) && (data.channel !== undefined || data.channelId !== undefined)) {
+    if (
+      !this.deviceChannelMap.has(deviceId) &&
+      (data.channel !== undefined || data.channelId !== undefined)
+    ) {
       // prefer explicit channel from data if present
       const ch = data.channel !== undefined ? data.channel : data.channelId;
       this.deviceChannelMap.set(deviceId, ch);
-      if (process.env.DEBUG_ANT) console.log(`Mapping device ${deviceId} -> channel ${ch}`);
+      if (process.env.DEBUG_ANT)
+        console.log(`Mapping device ${deviceId} -> channel ${ch}`);
     }
 
     if (process.env.DEBUG_ANT) {
-      console.log(`handleHeartRateData: device=${deviceId} hr=${heartRate} lastUpdate=${device.lastUpdate} connected=${device.connected}`);
-      console.log('deviceChannelMap now:', Array.from(this.deviceChannelMap.entries()));
-      console.log('channelSensorMap keys:', Array.from(this.channelSensorMap.keys()));
+      console.log(
+        `handleHeartRateData: device=${deviceId} hr=${heartRate} lastUpdate=${device.lastUpdate} connected=${device.connected}`,
+      );
+      console.log(
+        "deviceChannelMap now:",
+        Array.from(this.deviceChannelMap.entries()),
+      );
+      console.log(
+        "channelSensorMap keys:",
+        Array.from(this.channelSensorMap.keys()),
+      );
     }
 
     // Update calorie tracking
     this.calorieTracking.set(deviceId, {
       lastUpdate: now,
-      totalCalories: device.calories
+      totalCalories: device.calories,
     });
 
     // Store in sensors object for compatibility
@@ -313,7 +415,7 @@ class AntPlusService extends EventEmitter {
     const heartRateData = {
       deviceId,
       heartRate,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     this.emit("heartRateData", heartRateData);
@@ -324,28 +426,38 @@ class AntPlusService extends EventEmitter {
     const device = this.devices.get(idStr);
     if (device) {
       device.connected = false;
-      this.debouncedEmitConnectionChange('deviceDisconnected', idStr);
+      this.debouncedEmitConnectionChange("deviceDisconnected", idStr);
     }
     this.activeDevices.delete(idStr);
-    
+
     // Don't immediately rebind - let the normal scanning handle reconnection
     // This prevents the aggressive detach/attach cycle that causes flickering
-    if (process.env.DEBUG_ANT) console.log(`Device ${idStr} detached, will be rediscovered through normal scanning`);
+    if (process.env.DEBUG_ANT)
+      console.log(
+        `Device ${idStr} detached, will be rediscovered through normal scanning`,
+      );
   }
 
   // Debounced connection status change to prevent flickering
   debouncedEmitConnectionChange(eventType, deviceIdOrDevice) {
     const now = Date.now();
-    const deviceId = typeof deviceIdOrDevice === 'string' ? deviceIdOrDevice : deviceIdOrDevice.id;
+    const deviceId =
+      typeof deviceIdOrDevice === "string"
+        ? deviceIdOrDevice
+        : deviceIdOrDevice.id;
     const lastChange = this.lastConnectionChange.get(deviceId) || 0;
-    
+
     // Only emit if enough time has passed since last change
     if (now - lastChange > this.connectionDebounceMs) {
       this.lastConnectionChange.set(deviceId, now);
       this.emit(eventType, deviceIdOrDevice);
-      if (process.env.DEBUG_ANT) console.log(`Emitted ${eventType} for device ${deviceId}`);
+      if (process.env.DEBUG_ANT)
+        console.log(`Emitted ${eventType} for device ${deviceId}`);
     } else {
-      if (process.env.DEBUG_ANT) console.log(`Debounced ${eventType} for device ${deviceId} (too soon since last change)`);
+      if (process.env.DEBUG_ANT)
+        console.log(
+          `Debounced ${eventType} for device ${deviceId} (too soon since last change)`,
+        );
     }
   }
 
@@ -353,7 +465,7 @@ class AntPlusService extends EventEmitter {
   rebindChannelForDevice(deviceId) {
     if (!deviceId) return;
     const channel = this.deviceChannelMap.get(deviceId);
-    if (typeof channel === 'undefined') return;
+    if (typeof channel === "undefined") return;
 
     const sensor = this.channelSensorMap.get(channel);
     if (!sensor) {
@@ -375,17 +487,34 @@ class AntPlusService extends EventEmitter {
             this.deviceChannelMap.delete(deviceId);
             // keep channelSensorMap pointing to sensor
             this.channelSensorMap.set(channel, sensor);
-            try { fs.writeFileSync(this.deviceChannelMapPath, JSON.stringify(Object.fromEntries(this.deviceChannelMap)), 'utf8'); } catch(e){}
-            if (process.env.DEBUG_ANT) console.log(`Rebound channel ${channel} to wildcard for device ${deviceId}`);
+            try {
+              fs.writeFileSync(
+                this.deviceChannelMapPath,
+                JSON.stringify(Object.fromEntries(this.deviceChannelMap)),
+                "utf8",
+              );
+            } catch (e) {}
+            if (process.env.DEBUG_ANT)
+              console.log(
+                `Rebound channel ${channel} to wildcard for device ${deviceId}`,
+              );
           } else {
-            if (process.env.DEBUG_ANT) console.error(`attachWithRetry failed to reattach channel ${channel} to wildcard`);
+            if (process.env.DEBUG_ANT)
+              console.error(
+                `attachWithRetry failed to reattach channel ${channel} to wildcard`,
+              );
           }
         } catch (e) {
-          if (process.env.DEBUG_ANT) console.error(`Failed to reattach sensor ${channel} to wildcard:`, e);
+          if (process.env.DEBUG_ANT)
+            console.error(
+              `Failed to reattach sensor ${channel} to wildcard:`,
+              e,
+            );
         }
       }, 500);
     } catch (e) {
-      if (process.env.DEBUG_ANT) console.error(`Error detaching sensor for device ${deviceId}:`, e);
+      if (process.env.DEBUG_ANT)
+        console.error(`Error detaching sensor for device ${deviceId}:`, e);
     }
   }
 
@@ -398,16 +527,24 @@ class AntPlusService extends EventEmitter {
         try {
           const sensor = this.channelSensorMap.get(channel);
           if (!sensor) {
-            if (process.env.DEBUG_ANT) console.log(`attachWithRetry: no sensor for channel ${channel}`);
+            if (process.env.DEBUG_ANT)
+              console.log(`attachWithRetry: no sensor for channel ${channel}`);
             return resolve(false);
           }
-          if (process.env.DEBUG_ANT) console.log(`attachWithRetry attempt ${attempt} channel=${channel} deviceId=${deviceId}`);
+          if (process.env.DEBUG_ANT)
+            console.log(
+              `attachWithRetry attempt ${attempt} channel=${channel} deviceId=${deviceId}`,
+            );
           sensor.detach();
           sensor.attach(channel, deviceId);
           // success
           return resolve(true);
         } catch (err) {
-          if (process.env.DEBUG_ANT) console.error(`attachWithRetry attempt ${attempt} failed for channel ${channel}:`, err);
+          if (process.env.DEBUG_ANT)
+            console.error(
+              `attachWithRetry attempt ${attempt} failed for channel ${channel}:`,
+              err,
+            );
           if (attempt >= maxRetries) return resolve(false);
           // exponential backoff
           const delay = 200 * Math.pow(2, attempt - 1);
@@ -456,10 +593,13 @@ class AntPlusService extends EventEmitter {
         if (device.connected && now - device.lastUpdate.getTime() > 15000) {
           // Only mark as disconnected if we haven't recently changed its status
           const lastChange = this.lastConnectionChange.get(deviceId) || 0;
-          if (now - lastChange > 10000) { // Only if no recent status change
-            console.log(`Device ${deviceId} (${device.name}) marked as disconnected due to stale data`);
+          if (now - lastChange > 10000) {
+            // Only if no recent status change
+            console.log(
+              `Device ${deviceId} (${device.name}) marked as disconnected due to stale data`,
+            );
             device.connected = false;
-            this.debouncedEmitConnectionChange('deviceDisconnected', deviceId);
+            this.debouncedEmitConnectionChange("deviceDisconnected", deviceId);
           }
         }
       }

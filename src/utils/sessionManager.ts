@@ -36,7 +36,7 @@ export class SessionManager {
         heartRateData: [],
         caloriesData: [],
         bluePointsData: [],
-        startTime: new Date()
+        startTime: new Date(),
       });
     });
 
@@ -116,11 +116,11 @@ export class SessionManager {
 
     const remainingTime = Math.max(
       0,
-      DATA_COLLECTION_INTERVAL_MS - timeSinceLastCollection
+      DATA_COLLECTION_INTERVAL_MS - timeSinceLastCollection,
     );
 
     console.log(
-      `Resuming session. Time since last collection: ${timeSinceLastCollection}ms, remaining time: ${remainingTime}ms`
+      `Resuming session. Time since last collection: ${timeSinceLastCollection}ms, remaining time: ${remainingTime}ms`,
     );
 
     // Set timeout for the remaining time, then start regular interval
@@ -173,7 +173,7 @@ export class SessionManager {
     }
 
     const duration = Math.floor(
-      (endReference - this.sessionStartTime.getTime() - totalPausedTime) / 1000
+      (endReference - this.sessionStartTime.getTime() - totalPausedTime) / 1000,
     );
     console.log("SessionManager: Session duration:", duration, "seconds");
     return Math.max(0, duration); // Ensure duration is never negative
@@ -183,7 +183,7 @@ export class SessionManager {
     console.log(
       "SessionManager: Collecting data point for",
       devices.length,
-      "devices"
+      "devices",
     );
     devices.forEach((device) => {
       const sessionData = this.sessionData.get(device.id);
@@ -194,14 +194,14 @@ export class SessionManager {
         sessionData.bluePointsData.push(device.bluePoints || 0);
 
         console.log(
-          `Data point collected for ${device.name}: HR=${device.heartRate}, Calories=${device.calories}, BluePoints=${device.bluePoints}`
+          `Data point collected for ${device.name}: HR=${device.heartRate}, Calories=${device.calories}, BluePoints=${device.bluePoints}`,
         );
         console.log(
-          `Current data arrays lengths: HR=${sessionData.heartRateData.length}, Calories=${sessionData.caloriesData.length}, BluePoints=${sessionData.bluePointsData.length}`
+          `Current data arrays lengths: HR=${sessionData.heartRateData.length}, Calories=${sessionData.caloriesData.length}, BluePoints=${sessionData.bluePointsData.length}`,
         );
       } else {
         console.log(
-          `No session data found for device ${device.name} (${device.id})`
+          `No session data found for device ${device.name} (${device.id})`,
         );
       }
     });
@@ -209,7 +209,7 @@ export class SessionManager {
 
   static generateSessionData(
     devices: HeartRateDevice[],
-    participantSettings: any
+    participantSettings: any,
   ): SessionData[] {
     const sessionDataArray: SessionData[] = [];
     const sessionDuration = this.getSessionDuration();
@@ -238,7 +238,7 @@ export class SessionManager {
           maxHeartRate:
             validHeartRates.length > 0 ? Math.max(...validHeartRates) : 0,
           totalCalories: device.calories || 0,
-          totalBluePoints: device.bluePoints || 0
+          totalBluePoints: device.bluePoints || 0,
         };
 
         sessionDataArray.push(sessionData);
@@ -249,7 +249,7 @@ export class SessionManager {
   }
 
   static calculateUserStats(
-    devices: HeartRateDevice[]
+    devices: HeartRateDevice[],
   ): Map<string, UserSessionStats> {
     const statsMap = new Map<string, UserSessionStats>();
 
@@ -268,7 +268,7 @@ export class SessionManager {
           maxHeartRate:
             validHeartRates.length > 0 ? Math.max(...validHeartRates) : 0,
           totalCalories: device.calories || 0,
-          totalBluePoints: device.bluePoints || 0
+          totalBluePoints: device.bluePoints || 0,
         };
 
         statsMap.set(device.id, stats);

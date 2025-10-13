@@ -17,7 +17,7 @@ window.calculateCalories = calculateCalories;
 function App() {
   const [devices, setDevices] = useState<HeartRateDevice[]>([]);
   const [showSettings, setShowSettings] = useState(false);
-  const [isScanning, setIsScanning] = useState(false);
+
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [isSessionPaused, setIsSessionPaused] = useState(false);
   const [finalUserStats, setFinalUserStats] = useState<Map<
@@ -61,8 +61,6 @@ function App() {
               SessionManager.isSessionActive() &&
               !SessionManager.isSessionPaused()
             ) {
-              // console.log("Hello", settings)
-              // console.log(settings?.age, settings?.weight)
               if (settings?.age && settings?.weight) {
                 const caloriesPerMinute = window.calculateCalories({
                   heartRate: data.heartRate,
@@ -157,32 +155,28 @@ function App() {
         return updated;
       });
     }
-  }, []);
 
-  const startScanning = async () => {
-    setConnectionStatus("connecting");
-    setIsScanning(true);
-    try {
-      // Use mock mode if no real hardware is available
-      const result = await window.electronAPI.startAntScan({ mockMode: true });
-      if (result.success) {
-        setConnectionStatus("connected");
-      } else {
+    // Auto-start scanning
+    const autoStartScanning = async () => {
+      setConnectionStatus("connecting");
+      try {
+        // Use mock mode if no real hardware is available
+        const result = await window.electronAPI.startAntScan({
+          mockMode: true
+        });
+        if (result.success) {
+          setConnectionStatus("connected");
+        } else {
+          setConnectionStatus("disconnected");
+        }
+      } catch (error) {
+        console.error("Failed to start scanning:", error);
         setConnectionStatus("disconnected");
-        setIsScanning(false);
       }
-    } catch (error) {
-      console.error("Failed to start scanning:", error);
-      setConnectionStatus("disconnected");
-      setIsScanning(false);
-    }
-  };
+    };
 
-  const stopScanning = async () => {
-    setIsScanning(false);
-    setConnectionStatus("disconnected");
-    await window.electronAPI.stopAntScan();
-  };
+    autoStartScanning();
+  }, []);
 
   const saveDeviceSettings = (updatedDevices: HeartRateDevice[]) => {
     const settings = updatedDevices.reduce(
@@ -357,14 +351,7 @@ function App() {
   return (
     <div className="h-screen flex flex-col bg-gray-900 text-white overflow-hidden">
       {!showSettings && (
-        <Header
-          onToggleSettings={() => setShowSettings(!showSettings)}
-          isScanning={isScanning}
-          onStartScanning={startScanning}
-          onStopScanning={stopScanning}
-          deviceCount={devices.length}
-          connectedCount={devices.filter((d) => d.connected).length}
-        />
+        <Header onToggleSettings={() => setShowSettings(!showSettings)} />
       )}
 
       <ConnectionStatus status={connectionStatus} />
