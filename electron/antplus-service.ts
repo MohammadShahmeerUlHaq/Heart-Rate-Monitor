@@ -1,5 +1,5 @@
 import { EventEmitter } from "events";
-// import * as Ant from 'ant-plus';
+
 const Ant = require("ant-plus");
 
 export interface HeartRateDevice {
@@ -34,22 +34,13 @@ export class AntPlusService extends EventEmitter {
     }
 
     try {
-      // Initialize ANT+ USB stick
       const stickOptions = {
-        debug: false,
+        debug: false
       };
 
       this.stick = new Ant.GarminStick3(stickOptions);
-
-      this.stick.on("startup", () => {
-        console.log("ANT+ stick initialized successfully");
-        this.scanForDevices();
-      });
-
-      this.stick.on("shutdown", () => {
-        console.log("ANT+ stick shutdown");
-        this.isScanning = false;
-      });
+      this.stick.on("startup", () => this.scanForDevices());
+      this.stick.on("shutdown", () => (this.isScanning = false));
 
       this.isScanning = true;
     } catch (error: unknown) {
@@ -62,7 +53,6 @@ export class AntPlusService extends EventEmitter {
   async stopScanning(): Promise<void> {
     this.isScanning = false;
 
-    // Close all sensors
     for (const sensor of this.sensors.values()) {
       try {
         sensor.detach();
@@ -87,7 +77,6 @@ export class AntPlusService extends EventEmitter {
     if (!this.stick) return;
 
     try {
-      // Scan for heart rate sensors (device type 120)
       const heartRateScanState = new Ant.HeartRateScanState(this.stick);
 
       heartRateScanState.on("hbData", (data: any) => {
@@ -95,16 +84,13 @@ export class AntPlusService extends EventEmitter {
       });
 
       heartRateScanState.on("attached", (data: any) => {
-        console.log("Heart rate sensor attached:", data);
         this.handleDeviceAttached(data);
       });
 
       heartRateScanState.on("detached", (data: any) => {
-        console.log("Heart rate sensor detached:", data);
         this.handleDeviceDetached(data);
       });
 
-      // Also set up individual sensor connections for better reliability
       this.setupIndividualSensors();
     } catch (error) {
       console.error("Error setting up heart rate scanning:", error);
@@ -112,7 +98,6 @@ export class AntPlusService extends EventEmitter {
   }
 
   private setupIndividualSensors(): void {
-    // Set up multiple heart rate sensor instances for better device handling
     for (let deviceNumber = 0; deviceNumber < 20; deviceNumber++) {
       try {
         const sensor = new Ant.HeartRateSensor(this.stick);
@@ -154,30 +139,28 @@ export class AntPlusService extends EventEmitter {
         lastUpdate: new Date(),
         connected: true,
         calories: 0,
-        zone: 1,
+        zone: 1
       };
       this.devices.set(deviceId, device);
       this.emit("deviceConnected", device);
     }
 
-    // Update device data
     const previousHeartRate = device.heartRate;
     device.heartRate = heartRate;
     device.lastUpdate = new Date();
     device.connected = true;
     device.zone = this.calculateHeartRateZone(heartRate);
 
-    // Simple calorie estimation (very basic)
     if (previousHeartRate > 0) {
-      const timeDiff = (Date.now() - device.lastUpdate.getTime()) / 1000 / 60; // minutes
-      const caloriesPerMinute = heartRate * 0.1; // Very rough estimation
+      const timeDiff = (Date.now() - device.lastUpdate.getTime()) / 1000 / 60;
+      const caloriesPerMinute = heartRate * 0.1;
       device.calories += caloriesPerMinute * timeDiff;
     }
 
     const heartRateData: HeartRateData = {
       deviceId,
       heartRate,
-      timestamp: new Date(),
+      timestamp: new Date()
     };
 
     this.emit("heartRateData", heartRateData);
@@ -186,7 +169,6 @@ export class AntPlusService extends EventEmitter {
   private handleDeviceAttached(data: any): void {
     const deviceId =
       data.deviceId?.toString() || `device_${data.deviceNumber || 0}`;
-    console.log(`Device attached: ${deviceId}`);
 
     let device = this.devices.get(deviceId);
 
@@ -198,7 +180,7 @@ export class AntPlusService extends EventEmitter {
         lastUpdate: new Date(),
         connected: true,
         calories: 0,
-        zone: 1,
+        zone: 1
       };
       this.devices.set(deviceId, device);
     } else {
@@ -211,7 +193,6 @@ export class AntPlusService extends EventEmitter {
   private handleDeviceDetached(data: any): void {
     const deviceId =
       data.deviceId?.toString() || `device_${data.deviceNumber || 0}`;
-    console.log(`Device detached: ${deviceId}`);
 
     const device = this.devices.get(deviceId);
     if (device) {
@@ -221,11 +202,10 @@ export class AntPlusService extends EventEmitter {
   }
 
   private calculateHeartRateZone(heartRate: number): number {
-    // Basic heart rate zones (can be customized per person)
-    if (heartRate < 100) return 1; // Warm-up (blue)
-    if (heartRate < 130) return 2; // Fat burn (green)
-    if (heartRate < 160) return 3; // Cardio (orange)
-    return 4; // Peak (red)
+    if (heartRate < 100) return 1;
+    if (heartRate < 130) return 2;
+    if (heartRate < 160) return 3;
+    return 4;
   }
 
   getDevices(): HeartRateDevice[] {

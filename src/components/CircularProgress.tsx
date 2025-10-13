@@ -11,17 +11,18 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
   percentage,
   size = 160,
   strokeWidth = 10,
-  color = "#ef4444", // red-500
+  color = "#ef4444" // red-500
 }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const offset = circumference - (percentage / 100) * circumference;
-  const colorMap: { [key: string]: string } = {
+  // Simplified color mapping with direct access
+  const colorMap: Record<string, string> = {
     "text-blue-400": "#60a5fa",
     "text-blue-700": "#1d4ed8",
     "text-green-400": "#4ade80",
     "text-orange-400": "#fb923c",
-    "text-red-400": "#f87171",
+    "text-red-400": "#f87171"
   };
 
   const mappedColor = colorMap[color] || color;

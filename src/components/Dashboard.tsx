@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, memo } from "react";
 import { HeartRateDevice } from "../types/electron";
 import { HeartRateCard } from "./HeartRateCard";
 import { Footer } from "./Footer";
@@ -16,6 +16,9 @@ interface DashboardProps {
   finalUserStats?: Map<string, UserSessionStats> | null;
 }
 
+// Create a memoized HeartRateCard component to prevent unnecessary rerenders
+const MemoizedHeartRateCard = memo(HeartRateCard);
+
 export const Dashboard: React.FC<DashboardProps> = ({
   devices,
   isSessionActive,
@@ -26,7 +29,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onResumeSession,
   finalUserStats
 }) => {
-  // const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
   const [classStats, setClassStats] = useState({
     totalBluePoints: 0,
     totalCalories: 0,
@@ -92,6 +94,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [isSessionActive, devices, finalUserStats]);
 
+  // Use useMemo for device cards to prevent unnecessary re-renders
+  const deviceCards = useMemo(() => {
+    if (devices.length === 0) {
+      return null;
+    }
+
+    return devices.map((device) => (
+      <MemoizedHeartRateCard
+        key={device.id}
+        device={device}
+        sessionStats={userStats.get(device.id)}
+        isSessionActive={isSessionActive}
+      />
+    ));
+  }, [devices, userStats, isSessionActive]);
+
   if (devices.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -112,16 +130,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   return (
     <>
       <div className="flex-1 p-6 pb-24">
-        <div className="grid grid-cols-2 gap-8 auto-rows-fr">
-          {devices.map((device) => (
-            <HeartRateCard
-              key={device.id}
-              device={device}
-              sessionStats={userStats.get(device.id)}
-              isSessionActive={isSessionActive}
-            />
-          ))}
-        </div>
+        <div className="grid grid-cols-2 gap-8 auto-rows-fr">{deviceCards}</div>
       </div>
 
       <Footer

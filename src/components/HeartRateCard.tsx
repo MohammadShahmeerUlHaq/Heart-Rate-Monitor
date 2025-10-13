@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Heart, Wifi, WifiOff, Zap, Snowflake } from "lucide-react";
 import { HeartRateDevice } from "../types/electron";
 import { ParticipantSettingsManager } from "../utils/participantSettings";
@@ -11,58 +11,65 @@ interface HeartRateCardProps {
   isSessionActive?: boolean;
 }
 
-const getZoneColors = (heartRate: number) => {
-  if (heartRate <= 120) {
-    return {
-      bg: "bg-green-500/20",
-      border: "border-green-500",
-      text: "text-green-400",
-      name: "GREEN ZONE",
-    };
-  } else if (heartRate <= 140) {
-    return {
-      bg: "bg-blue-500/20",
-      border: "border-blue-500",
-      text: "text-blue-400",
-      name: "BLUE ZONE",
-    };
-  } else if (heartRate <= 150) {
-    return {
-      bg: "bg-blue-800/20",
-      border: "border-blue-800",
-      text: "text-blue-700",
-      name: "DARK BLUE",
-    };
-  } else if (heartRate <= 160) {
-    return {
-      bg: "bg-orange-500/20",
-      border: "border-orange-500",
-      text: "text-orange-400",
-      name: "ORANGE",
-    };
-  } else {
-    return {
-      bg: "bg-red-500/20",
-      border: "border-red-500",
-      text: "text-red-400",
-      name: "RED ZONE",
-    };
+// Define heart rate zones as constants to reduce repetitive code
+const HEART_RATE_ZONES = {
+  green: {
+    bg: "bg-green-500/20",
+    border: "border-green-500",
+    text: "text-green-400",
+    name: "GREEN ZONE"
+  },
+  blue: {
+    bg: "bg-blue-500/20",
+    border: "border-blue-500",
+    text: "text-blue-400",
+    name: "BLUE ZONE"
+  },
+  darkBlue: {
+    bg: "bg-blue-800/20",
+    border: "border-blue-800",
+    text: "text-blue-700",
+    name: "DARK BLUE"
+  },
+  orange: {
+    bg: "bg-orange-500/20",
+    border: "border-orange-500",
+    text: "text-orange-400",
+    name: "ORANGE"
+  },
+  red: {
+    bg: "bg-red-500/20",
+    border: "border-red-500",
+    text: "text-red-400",
+    name: "RED ZONE"
   }
+};
+
+const getZoneColors = (heartRate: number) => {
+  if (heartRate <= 120) return HEART_RATE_ZONES.green;
+  if (heartRate <= 140) return HEART_RATE_ZONES.blue;
+  if (heartRate <= 150) return HEART_RATE_ZONES.darkBlue;
+  if (heartRate <= 160) return HEART_RATE_ZONES.orange;
+  return HEART_RATE_ZONES.red;
 };
 
 export const HeartRateCard: React.FC<HeartRateCardProps> = ({
   device,
   sessionStats,
-  isSessionActive = false,
+  isSessionActive = false
 }) => {
   const [maxHeartRate, setMaxHeartRate] = useState(0);
-  const isStale =
-    device.lastUpdate && Date.now() - device.lastUpdate.getTime() > 5000;
-  const zone = getZoneColors(device.heartRate);
-  // const zone =
-  //   device.connected && !isStale
-  //     ? getZoneColors(device.heartRate)
-  //     : { bg: "bg-gray-800", border: "border-gray-700", text: "text-gray-600" };
+
+  // Calculate these values once per render
+  const isStale = useMemo(
+    () => device.lastUpdate && Date.now() - device.lastUpdate.getTime() > 5000,
+    [device.lastUpdate]
+  );
+
+  const zone = useMemo(
+    () => getZoneColors(device.heartRate),
+    [device.heartRate]
+  );
 
   useEffect(() => {
     // Load initial max heart rate
@@ -73,7 +80,7 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({
     if (device.heartRate > storedMax && device.heartRate > 0) {
       ParticipantSettingsManager.updateMaxHeartRate(
         device.id,
-        device.heartRate,
+        device.heartRate
       );
       setMaxHeartRate(device.heartRate);
     }
@@ -85,14 +92,8 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({
     <div
       className={`
         relative rounded-xl border-2 transition-all duration-300 h-full bg-[#111927]
-        ${zone.border}
-        ${"shadow-lg"}
+        ${zone.border} shadow-lg
       `}
-      // className={`
-      //   relative rounded-xl border-2 transition-all duration-300 h-full bg-[#111927]
-      //   ${device.connected && !isStale ? zone.border : "border-gray-800"}
-      //   ${device.connected && !isStale ? "shadow-lg" : "opacity-60"}
-      // `}
     >
       {/* Connection Status */}
       <div className="absolute top-4 right-4">
@@ -123,20 +124,11 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({
                 <div className="flex flex-col">
                   <div className="flex items-center gap-3">
                     <Heart
-                      className={`w-8 h-8 ${`${zone.text} animate-pulse`}`}
-                      // className={`w-8 h-8 ${
-                      //   device.connected && !isStale && device.heartRate > 0
-                      //     ? `${zone.text} animate-pulse`
-                      //     : "text-gray-500"
-                      // }`}
-                      fill={"currentColor"}
-                      // fill={
-                      //   device.connected && !isStale && device.heartRate > 0 ? "currentColor" : "none"
-                      // }
+                      className={`w-8 h-8 ${zone.text} animate-pulse`}
+                      fill="currentColor"
                     />
                     <div className="text-4xl font-bold text-white">
                       {device.heartRate}
-                      {/* {device.connected && !isStale ? device.heartRate : "--"} */}
                     </div>
                   </div>
                 </div>
@@ -146,9 +138,8 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({
                   <div className="flex items-center gap-3">
                     <Zap className="w-8 h-8 text-yellow-500" />
                     <div className="text-4xl font-bold text-white">
-                      {/* {device.connected && !isStale ? Math.round(sessionStats?.totalCalories || device.calories || 0) : "--"} */}
                       {Math.round(
-                        sessionStats?.totalCalories || device.calories || 0,
+                        sessionStats?.totalCalories || device.calories || 0
                       )}
                     </div>
                   </div>
@@ -159,9 +150,8 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({
                   <div className="flex items-center gap-3">
                     <Snowflake className="w-8 h-8 text-blue-500" />
                     <div className="text-4xl font-bold text-white">
-                      {/* {device.connected && !isStale ? Math.round(sessionStats?.totalBluePoints || device.bluePoints || 0) : "--"} */}
                       {Math.round(
-                        sessionStats?.totalBluePoints || device.bluePoints || 0,
+                        sessionStats?.totalBluePoints || device.bluePoints || 0
                       )}
                     </div>
                   </div>
@@ -174,14 +164,12 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({
                   <div className="flex items-center gap-3">
                     <Zap className="w-8 h-8 text-yellow-500" />
                     <div className="text-3xl font-bold text-white">
-                      {/* {device.connected && !isStale ? Math.round(sessionStats?.totalCalories || 0) : "--"} */}
                       {Math.round(sessionStats?.totalCalories || 0)}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <Heart className="w-6 h-6 text-blue-400" />
                     <div className="text-2xl font-bold text-white">
-                      {/* {device.connected && !isStale && sessionStats ? Math.round(sessionStats.averageHeartRate) : "--"} */}
                       {sessionStats
                         ? Math.round(sessionStats.averageHeartRate)
                         : "--"}
@@ -195,7 +183,6 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({
                   <div className="flex items-center gap-3">
                     <Snowflake className="w-8 h-8 text-blue-500" />
                     <div className="text-3xl font-bold text-white">
-                      {/* {device.connected && !isStale ? Math.round(sessionStats?.totalBluePoints || 0) : "--"} */}
                       {Math.round(sessionStats?.totalBluePoints || 0)}
                     </div>
                   </div>

@@ -23,12 +23,8 @@ class Application {
         if (this.antPlusService) {
           this.antPlusService
             .stopScanning()
-            .then(() => {
-              app.quit();
-            })
-            .catch(() => {
-              app.quit();
-            });
+            .then(() => app.quit())
+            .catch(() => app.quit());
         } else {
           app.quit();
         }
@@ -67,10 +63,10 @@ class Application {
         nodeIntegration: false,
         contextIsolation: true,
         preload: path.join(__dirname, "preload.js"),
-        webSecurity: false,
+        webSecurity: false
       },
       titleBarStyle: "hidden",
-      icon: path.join(__dirname, "../assets/icon.png"),
+      icon: path.join(__dirname, "../assets/icon.png")
     });
 
     const isDev = process.env.NODE_ENV === "development";
@@ -87,7 +83,7 @@ class Application {
       "did-fail-load",
       (event, errorCode, errorDescription) => {
         console.error("Failed to load:", errorCode, errorDescription);
-      },
+      }
     );
 
     this.setupIpcHandlers();
@@ -113,10 +109,10 @@ class Application {
               if (this.mainWindow) {
                 this.mainWindow.setFullScreen(!this.mainWindow.isFullScreen());
               }
-            },
-          },
-        ],
-      },
+            }
+          }
+        ]
+      }
     ];
 
     if (process.platform === "darwin") {
@@ -129,8 +125,8 @@ class Application {
           { role: "hideOthers" },
           { role: "unhide" },
           { type: "separator" },
-          { role: "quit" },
-        ],
+          { role: "quit" }
+        ]
       });
     }
 
@@ -168,7 +164,7 @@ class Application {
           if (this.mainWindow) {
             dialog.showErrorBox(
               "ANT+ Device Not Connected",
-              "ANT+ USB dongle not found! Please ensure it is connected and try again.",
+              "ANT+ USB dongle not found! Please ensure it is connected and try again."
             );
           }
           return { success: false, error: "ANT_DEVICE_NOT_CONNECTED" };

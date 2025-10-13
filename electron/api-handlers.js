@@ -6,9 +6,7 @@ const { ChartJSNodeCanvas } = require("chartjs-node-canvas");
 const pool = new Pool({
   connectionString:
     "postgresql://neondb_owner:npg_PFYcur25WOXR@ep-floral-wildflower-advjfh6o-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  ssl: { rejectUnauthorized: false }
 });
 
 // Email configuration
@@ -16,15 +14,15 @@ const emailTransporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: "contact.healthmate@gmail.com",
-    pass: "puiprcgewpajyniu",
-  },
+    pass: "puiprcgewpajyniu"
+  }
 });
 
 // Chart configuration
 const chartJSNodeCanvas = new ChartJSNodeCanvas({
   width: 800,
   height: 600,
-  backgroundColour: "#2D3748",
+  backgroundColour: "#2D3748"
 });
 
 class APIHandlers {
@@ -57,7 +55,7 @@ class APIHandlers {
         to: emailData.to,
         subject: emailData.subject,
         html: emailData.html,
-        attachments: emailData.attachments,
+        attachments: emailData.attachments
       };
 
       await emailTransporter.sendMail(mailOptions);
@@ -105,7 +103,7 @@ class APIHandlers {
         `Calories: ${Math.round(sessionData.totalCalories)}`,
         `Avg HR: ${Math.round(sessionData.averageHeartRate)} BPM`,
         `Max HR: ${sessionData.maxHeartRate} BPM`,
-        `Session Time: ${formatTime(sessionData.totalSessionTime)}`,
+        `Session Time: ${formatTime(sessionData.totalSessionTime)}`
       ];
 
       const configuration = {
@@ -121,7 +119,7 @@ class APIHandlers {
               yAxisID: "y1",
               tension: 0.4,
               pointRadius: 2,
-              pointHoverRadius: 4,
+              pointHoverRadius: 4
             },
             {
               label: "Blue Points",
@@ -131,26 +129,26 @@ class APIHandlers {
               yAxisID: "y",
               tension: 0.4,
               pointRadius: 2,
-              pointHoverRadius: 4,
-            },
-          ],
+              pointHoverRadius: 4
+            }
+          ]
         },
         options: {
           responsive: true,
           layout: {
             padding: {
-              bottom: 80, // Add padding at bottom for stats
-            },
+              bottom: 80 // Add padding at bottom for stats
+            }
           },
           plugins: {
             title: {
               display: true,
               text: `${sessionData.name} - Heart Rate Session`,
               color: "#FFFFFF",
-              font: { size: 20, weight: "bold" },
+              font: { size: 20, weight: "bold" }
             },
             legend: {
-              labels: { color: "#FFFFFF" },
+              labels: { color: "#FFFFFF" }
             },
             // Custom plugin to draw stats at the bottom
             afterDraw: {
@@ -194,18 +192,18 @@ class APIHandlers {
                 }
 
                 ctx.restore();
-              },
-            },
+              }
+            }
           },
           scales: {
             x: {
               title: {
                 display: true,
                 text: "Time (MM:SS)",
-                color: "#FFFFFF",
+                color: "#FFFFFF"
               },
               ticks: { color: "#FFFFFF" },
-              grid: { color: "rgba(255, 255, 255, 0.1)" },
+              grid: { color: "rgba(255, 255, 255, 0.1)" }
             },
             y: {
               type: "linear",
@@ -214,10 +212,10 @@ class APIHandlers {
               title: {
                 display: true,
                 text: "Blue Points",
-                color: "#3B82F6",
+                color: "#3B82F6"
               },
               ticks: { color: "#3B82F6" },
-              grid: { color: "rgba(59, 130, 246, 0.1)" },
+              grid: { color: "rgba(59, 130, 246, 0.1)" }
             },
             y1: {
               type: "linear",
@@ -226,12 +224,12 @@ class APIHandlers {
               title: {
                 display: true,
                 text: "Heart Rate (BPM)",
-                color: "#EF4444",
+                color: "#EF4444"
               },
               ticks: { color: "#EF4444" },
-              grid: { drawOnChartArea: false },
-            },
-          },
+              grid: { drawOnChartArea: false }
+            }
+          }
         },
         plugins: [
           {
@@ -275,9 +273,9 @@ class APIHandlers {
               }
 
               ctx.restore();
-            },
-          },
-        ],
+            }
+          }
+        ]
       };
 
       const imageBuffer = await chartJSNodeCanvas.renderToBuffer(configuration);

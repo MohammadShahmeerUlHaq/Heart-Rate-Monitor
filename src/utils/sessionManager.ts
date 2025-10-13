@@ -1,8 +1,7 @@
 import { HeartRateDevice } from "../types/electron";
 import { SessionData, UserSessionStats } from "../types/session";
 
-// Configuration: Data collection interval in milliseconds
-const DATA_COLLECTION_INTERVAL_MS = 5000; // 10 seconds
+const DATA_COLLECTION_INTERVAL_MS = 5000;
 
 export class SessionManager {
   private static sessionData: Map<
@@ -28,26 +27,21 @@ export class SessionManager {
     this.sessionEndTime = null;
     this.sessionStartTime = new Date();
     this.lastDataCollectionTime = new Date();
-    this.currentDevices = [...devices]; // Store a copy of current devices
+    this.currentDevices = [...devices];
 
-    // Initialize data arrays for each device
     devices.forEach((device) => {
       this.sessionData.set(device.id, {
         heartRateData: [],
         caloriesData: [],
         bluePointsData: [],
-        startTime: new Date(),
+        startTime: new Date()
       });
     });
 
-    // Start collecting data every 10 seconds
     this.dataCollectionInterval = setInterval(() => {
-      // Get current devices from the global state instead of using stale reference
       this.collectDataPointFromGlobalState();
       this.lastDataCollectionTime = new Date();
     }, DATA_COLLECTION_INTERVAL_MS);
-
-    console.log("Session started for", devices.length, "devices");
   }
 
   static updateCurrentDevices(devices: HeartRateDevice[]): void {
@@ -64,12 +58,10 @@ export class SessionManager {
       this.dataCollectionInterval = null;
     }
 
-    // Record end time so duration freezes post-stop
     const endTime = new Date();
     this.sessionEndTime = endTime;
     this.lastDataCollectionTime = null;
 
-    console.log("Session stopped");
     return endTime;
   }
 
@@ -78,20 +70,15 @@ export class SessionManager {
   }
 
   static pauseSession(): void {
-    if (!this.isSessionActive() || this.isPaused) {
-      return;
-    }
+    if (!this.isSessionActive() || this.isPaused) return;
 
     this.isPaused = true;
     this.pauseStartTime = new Date();
 
-    // Stop data collection but preserve timing
     if (this.dataCollectionInterval) {
       clearInterval(this.dataCollectionInterval);
       this.dataCollectionInterval = null;
     }
-
-    console.log("Session paused");
   }
 
   static resumeSession(): void {
@@ -99,7 +86,6 @@ export class SessionManager {
       return;
     }
 
-    // Calculate time spent paused and add to total
     let pauseDuration = 0;
     if (this.pauseStartTime) {
       pauseDuration = Date.now() - this.pauseStartTime.getTime();
@@ -109,46 +95,32 @@ export class SessionManager {
 
     this.isPaused = false;
 
-    // Calculate remaining time until next data collection
     const timeSinceLastCollection = this.lastDataCollectionTime
       ? Date.now() - this.lastDataCollectionTime.getTime() - pauseDuration
       : 0;
-
     const remainingTime = Math.max(
       0,
-      DATA_COLLECTION_INTERVAL_MS - timeSinceLastCollection,
+      DATA_COLLECTION_INTERVAL_MS - timeSinceLastCollection
     );
 
-    console.log(
-      `Resuming session. Time since last collection: ${timeSinceLastCollection}ms, remaining time: ${remainingTime}ms`,
-    );
-
-    // Set timeout for the remaining time, then start regular interval
-    if (remainingTime > 0) {
-      setTimeout(() => {
-        if (!this.isPaused && this.isSessionActive()) {
-          this.collectDataPointFromGlobalState();
-          this.lastDataCollectionTime = new Date();
-
-          // Now start the regular interval
-          this.dataCollectionInterval = setInterval(() => {
-            this.collectDataPointFromGlobalState();
-            this.lastDataCollectionTime = new Date();
-          }, DATA_COLLECTION_INTERVAL_MS);
-        }
-      }, remainingTime);
-    } else {
-      // If remaining time is 0 or negative, collect immediately and start regular interval
-      this.collectDataPointFromGlobalState();
-      this.lastDataCollectionTime = new Date();
-
+    const startRegularInterval = () => {
       this.dataCollectionInterval = setInterval(() => {
         this.collectDataPointFromGlobalState();
         this.lastDataCollectionTime = new Date();
       }, DATA_COLLECTION_INTERVAL_MS);
-    }
+    };
 
-    console.log("Session resumed");
+    const handleIntervalStart = () => {
+      if (!this.isPaused && this.isSessionActive()) {
+        this.collectDataPointFromGlobalState();
+        this.lastDataCollectionTime = new Date();
+        startRegularInterval();
+      }
+    };
+
+    remainingTime > 0
+      ? setTimeout(handleIntervalStart, remainingTime)
+      : handleIntervalStart();
   }
 
   static isSessionPaused(): boolean {
@@ -156,10 +128,7 @@ export class SessionManager {
   }
 
   static getSessionDuration(): number {
-    if (!this.sessionStartTime) {
-      console.log("SessionManager: No session start time, returning 0");
-      return 0;
-    }
+    if (!this.sessionStartTime) return 0;
 
     const endReference = this.sessionEndTime
       ? this.sessionEndTime.getTime()
@@ -167,49 +136,30 @@ export class SessionManager {
 
     let totalPausedTime = this.totalPausedTime;
 
-    // If currently paused, add the current pause duration
     if (this.isPaused && this.pauseStartTime) {
       totalPausedTime += Date.now() - this.pauseStartTime.getTime();
     }
 
     const duration = Math.floor(
-      (endReference - this.sessionStartTime.getTime() - totalPausedTime) / 1000,
+      (endReference - this.sessionStartTime.getTime() - totalPausedTime) / 1000
     );
-    console.log("SessionManager: Session duration:", duration, "seconds");
-    return Math.max(0, duration); // Ensure duration is never negative
+    return Math.max(0, duration);
   }
 
   private static collectDataPoint(devices: HeartRateDevice[]): void {
-    console.log(
-      "SessionManager: Collecting data point for",
-      devices.length,
-      "devices",
-    );
     devices.forEach((device) => {
       const sessionData = this.sessionData.get(device.id);
       if (sessionData) {
-        // Capture current values at this moment
-        sessionData.heartRateData.push(device.heartRate || 0);
         sessionData.caloriesData.push(device.calories || 0);
+        sessionData.heartRateData.push(device.heartRate || 0);
         sessionData.bluePointsData.push(device.bluePoints || 0);
-
-        console.log(
-          `Data point collected for ${device.name}: HR=${device.heartRate}, Calories=${device.calories}, BluePoints=${device.bluePoints}`,
-        );
-        console.log(
-          `Current data arrays lengths: HR=${sessionData.heartRateData.length}, Calories=${sessionData.caloriesData.length}, BluePoints=${sessionData.bluePointsData.length}`,
-        );
-      } else {
-        console.log(
-          `No session data found for device ${device.name} (${device.id})`,
-        );
       }
     });
   }
 
   static generateSessionData(
     devices: HeartRateDevice[],
-    participantSettings: any,
+    participantSettings: any
   ): SessionData[] {
     const sessionDataArray: SessionData[] = [];
     const sessionDuration = this.getSessionDuration();
@@ -238,7 +188,7 @@ export class SessionManager {
           maxHeartRate:
             validHeartRates.length > 0 ? Math.max(...validHeartRates) : 0,
           totalCalories: device.calories || 0,
-          totalBluePoints: device.bluePoints || 0,
+          totalBluePoints: device.bluePoints || 0
         };
 
         sessionDataArray.push(sessionData);
@@ -249,7 +199,7 @@ export class SessionManager {
   }
 
   static calculateUserStats(
-    devices: HeartRateDevice[],
+    devices: HeartRateDevice[]
   ): Map<string, UserSessionStats> {
     const statsMap = new Map<string, UserSessionStats>();
 
@@ -268,7 +218,7 @@ export class SessionManager {
           maxHeartRate:
             validHeartRates.length > 0 ? Math.max(...validHeartRates) : 0,
           totalCalories: device.calories || 0,
-          totalBluePoints: device.bluePoints || 0,
+          totalBluePoints: device.bluePoints || 0
         };
 
         statsMap.set(device.id, stats);
