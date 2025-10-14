@@ -137,7 +137,7 @@ class Application {
   setupIpcHandlers() {
     ipcMain.handle("start-ant-scan", async (_, options = {}) => {
       try {
-        const isMock = true;
+        const isMock = false;
         if (!this.antPlusService) {
           this.antPlusService = new AntPlusService({ mockMode: isMock });
           this.setupAntPlusListeners();
