@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo, memo } from "react";
-import { HeartRateDevice } from "../types/electron";
-import { HeartRateCard } from "./HeartRateCard";
+
 import { Footer } from "./Footer";
-import { SessionManager } from "../utils/sessionManager";
+import { HeartRateCard } from "./HeartRateCard";
+
+import { HeartRateDevice } from "../types/electron";
 import { UserSessionStats } from "../types/session";
+import { SessionManager } from "../utils/sessionManager";
 
 interface DashboardProps {
   devices: HeartRateDevice[];
@@ -16,7 +18,6 @@ interface DashboardProps {
   finalUserStats?: Map<string, UserSessionStats> | null;
 }
 
-// Create a memoized HeartRateCard component to prevent unnecessary rerenders
 const MemoizedHeartRateCard = memo(HeartRateCard);
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -37,6 +38,37 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [userStats, setUserStats] = useState<Map<string, UserSessionStats>>(
     new Map()
   );
+  const [viewMode, setViewMode] = useState<"6" | "12">("12");
+
+  // Load view mode from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("viewMode");
+    if (saved === "6" || saved === "12") {
+      setViewMode(saved);
+    }
+
+    // Listen for storage changes (when Settings saves)
+    const handleStorageChange = () => {
+      const updated = localStorage.getItem("viewMode");
+      if (updated === "6" || updated === "12") {
+        setViewMode(updated);
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    // Also check periodically in case it's the same window
+    const interval = setInterval(() => {
+      const updated = localStorage.getItem("viewMode");
+      if (updated === "6" || updated === "12") {
+        setViewMode(updated);
+      }
+    }, 500);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
 
   // Update class time every second (independent of device changes)
   useEffect(() => {
@@ -106,9 +138,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
         device={device}
         sessionStats={userStats.get(device.id)}
         isSessionActive={isSessionActive}
+        viewMode={viewMode}
       />
     ));
-  }, [devices, userStats, isSessionActive]);
+  }, [devices, userStats, isSessionActive, viewMode]);
 
   if (devices.length === 0) {
     return (
@@ -130,7 +163,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   return (
     <>
       <div className="flex-1 p-6 pb-24">
-        <div className="grid grid-cols-2 gap-8 auto-rows-fr">{deviceCards}</div>
+        <div
+          className={`grid grid-cols-2 gap-8 ${viewMode === "6" ? "auto-rows-fr" : "grid-rows-6 auto-rows-fr"}`}
+        >
+          {deviceCards}
+        </div>
       </div>
 
       <Footer

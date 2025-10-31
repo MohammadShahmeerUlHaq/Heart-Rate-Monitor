@@ -1,52 +1,103 @@
 export interface HeartRateZone {
-  min: number;
-  max: number;
+  minPercent: number; // Percentage of max HR
+  maxPercent: number; // Percentage of max HR
   name: string;
   color: string;
+  colorClass: {
+    bg: string;
+    border: string;
+    text: string;
+  };
+  bluePointsPerMinute: number;
   description: string;
 }
 
-export const defaultHeartRateZones: HeartRateZone[] = [
+export const percentageBasedZones: HeartRateZone[] = [
   {
-    min: 50,
-    max: 100,
-    name: "WARM UP",
-    color: "blue",
-    description: "Light activity, recovery",
-  },
-  {
-    min: 100,
-    max: 130,
-    name: "FAT BURN",
+    minPercent: 0,
+    maxPercent: 70,
+    name: "GREEN ZONE",
     color: "green",
-    description: "Moderate intensity, fat burning",
+    colorClass: {
+      bg: "bg-green-500/20",
+      border: "border-green-500",
+      text: "text-green-400"
+    },
+    bluePointsPerMinute: 1,
+    description: "Light activity, recovery"
   },
   {
-    min: 130,
-    max: 160,
-    name: "CARDIO",
+    minPercent: 70,
+    maxPercent: 80,
+    name: "BLUE ZONE",
+    color: "blue",
+    colorClass: {
+      bg: "bg-blue-500/20",
+      border: "border-blue-500",
+      text: "text-blue-400"
+    },
+    bluePointsPerMinute: 2,
+    description: "Moderate intensity"
+  },
+  {
+    minPercent: 80,
+    maxPercent: 90,
+    name: "ORANGE ZONE",
     color: "orange",
-    description: "High intensity cardio training",
+    colorClass: {
+      bg: "bg-orange-500/20",
+      border: "border-orange-500",
+      text: "text-orange-400"
+    },
+    bluePointsPerMinute: 4,
+    description: "High intensity cardio"
   },
   {
-    min: 160,
-    max: 220,
-    name: "PEAK",
+    minPercent: 90,
+    maxPercent: 100,
+    name: "RED ZONE",
     color: "red",
-    description: "Maximum effort training",
-  },
+    colorClass: {
+      bg: "bg-red-500/20",
+      border: "border-red-500",
+      text: "text-red-400"
+    },
+    bluePointsPerMinute: 5,
+    description: "Maximum effort"
+  }
 ];
 
-export const calculateHeartRateZone = (
-  heartRate: number,
-  zones: HeartRateZone[] = defaultHeartRateZones,
-): number => {
-  for (let i = 0; i < zones.length; i++) {
-    if (heartRate >= zones[i].min && heartRate <= zones[i].max) {
-      return i + 1;
+export const BASE_ATTENDANCE_POINTS = 10;
+
+export const calculateZoneFromPercentage = (
+  currentHR: number,
+  maxHR: number,
+  zones: HeartRateZone[] = percentageBasedZones
+): HeartRateZone => {
+  if (!maxHR || maxHR === 0) {
+    return zones[0]; // Default to green zone if no max HR
+  }
+
+  const percentage = (currentHR / maxHR) * 100;
+
+  for (const zone of zones) {
+    if (percentage >= zone.minPercent && percentage < zone.maxPercent) {
+      return zone;
     }
   }
-  return 1; // Default to warm-up zone
+
+  // If >= 100%, return red zone
+  return zones[zones.length - 1];
+};
+
+export const calculateBluePoints = (
+  currentHR: number,
+  maxHR: number,
+  timeInMinutes: number,
+  zones: HeartRateZone[] = percentageBasedZones
+): number => {
+  const zone = calculateZoneFromPercentage(currentHR, maxHR, zones);
+  return zone.bluePointsPerMinute * timeInMinutes;
 };
 
 export const getZoneColor = (zone: number): string => {

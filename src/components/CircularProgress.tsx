@@ -13,9 +13,15 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
   strokeWidth = 10,
   color = "#ef4444" // red-500
 }) => {
-  const radius = (size - strokeWidth) / 2;
+  // Dynamic stroke and text based on circle size
+  const dynamicStroke = size >= 240 ? 12 : strokeWidth;
+  const textSize =
+    size >= 240 ? "text-6xl" : size >= 180 ? "text-5xl" : "text-4xl";
+
+  const radius = (size - dynamicStroke) / 2;
   const circumference = radius * 2 * Math.PI;
   const offset = circumference - (percentage / 100) * circumference;
+
   // Simplified color mapping with direct access
   const colorMap: Record<string, string> = {
     "text-blue-400": "#60a5fa",
@@ -28,7 +34,10 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
   const mappedColor = colorMap[color] || color;
 
   return (
-    <div className="relative inline-flex items-center justify-center w-40 h-40">
+    <div
+      className="relative inline-flex items-center justify-center"
+      style={{ width: size, height: size }}
+    >
       <svg
         className="transform -rotate-90 w-full h-full"
         viewBox={`0 0 ${size} ${size}`}
@@ -36,7 +45,7 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
       >
         {/* Background track */}
         <circle
-          strokeWidth={strokeWidth}
+          strokeWidth={dynamicStroke}
           stroke="#1e293b"
           fill="none"
           r={radius}
@@ -46,7 +55,7 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
         {/* Progress circle */}
         <circle
           className="transition-all duration-300 ease-in-out"
-          strokeWidth={strokeWidth}
+          strokeWidth={dynamicStroke}
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           strokeLinecap="round"
@@ -58,7 +67,7 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
         />
       </svg>
       <div className="absolute flex flex-col items-center justify-center">
-        <span className="text-4xl font-bold text-white whitespace-nowrap">
+        <span className={`${textSize} font-bold text-white whitespace-nowrap`}>
           {Math.round(percentage)}%
         </span>
       </div>

@@ -10,6 +10,11 @@ import { SessionManager } from "./utils/sessionManager";
 import { DatabaseService } from "./utils/database";
 import { EmailService } from "./utils/emailService";
 import { ChartGenerator } from "./utils/chartGenerator";
+import {
+  calculateBluePoints,
+  BASE_ATTENDANCE_POINTS
+} from "./utils/heartRateZones";
+import { ParticipantSettingsManager } from "./utils/participantSettings";
 
 // Make calculateCalories available globally
 window.calculateCalories = calculateCalories;
@@ -65,9 +70,14 @@ function App() {
             newCalories += caloriesPerMinute * timeDiffMinutes;
           }
 
-          if (data.heartRate > 150) {
-            newBluePoints += timeDiffMinutes;
-          }
+          // Calculate blue points based on percentage of max heart rate
+          const maxHR = ParticipantSettingsManager.getMaxHeartRate(device.id);
+          const bluePointsEarned = calculateBluePoints(
+            data.heartRate,
+            maxHR,
+            timeDiffMinutes
+          );
+          newBluePoints += bluePointsEarned;
         }
 
         return {
@@ -263,7 +273,11 @@ function App() {
     try {
       await DatabaseService.initializeDatabase();
       setDevices((prev) =>
-        prev.map((d) => ({ ...d, calories: 0, bluePoints: 0 }))
+        prev.map((d) => ({
+          ...d,
+          calories: 0,
+          bluePoints: BASE_ATTENDANCE_POINTS
+        }))
       );
       SessionManager.startSession(devices);
       setIsSessionActive(true);

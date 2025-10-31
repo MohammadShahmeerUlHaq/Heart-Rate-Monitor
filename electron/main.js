@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, Menu, dialog } = require("electron");
-const path = require("path");
 const { AntPlusService } = require("./antplus-service");
 const { APIHandlers } = require("./api-handlers");
+const path = require("path");
 
 class Application {
   constructor() {
@@ -137,7 +137,7 @@ class Application {
   setupIpcHandlers() {
     ipcMain.handle("start-ant-scan", async (_, options = {}) => {
       try {
-        const isMock = false;
+        const isMock = true;
         if (!this.antPlusService) {
           this.antPlusService = new AntPlusService({ mockMode: isMock });
           this.setupAntPlusListeners();

@@ -37,6 +37,10 @@ export const Settings: React.FC<SettingsProps> = ({
   >({});
 
   const initialized = useRef(false); // <-- added ref
+  const [viewMode, setViewMode] = useState<"6" | "12">(() => {
+    const saved = localStorage.getItem("viewMode");
+    return saved === "6" || saved === "12" ? saved : "12";
+  });
 
   // Initialize (or merge) settings only once
   useEffect(() => {
@@ -129,6 +133,7 @@ export const Settings: React.FC<SettingsProps> = ({
         "participantSettings",
         JSON.stringify(localSettings)
       );
+      localStorage.setItem("viewMode", viewMode);
     } catch (e) {
       console.warn("Failed to persist participantSettings:", e);
     }
@@ -163,6 +168,25 @@ export const Settings: React.FC<SettingsProps> = ({
         </div>
 
         <div className="space-y-6">
+          {/* View Mode Selection */}
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 shadow-xl">
+            <h2 className="text-2xl font-semibold text-white mb-6 flex items-center">
+              <Monitor className="w-6 h-6 mr-3 text-blue-400" />
+              Display Settings
+            </h2>
+            <div className="flex items-center space-x-4">
+              <label className="text-gray-300 font-medium">View Mode:</label>
+              <select
+                value={viewMode}
+                onChange={(e) => setViewMode(e.target.value as "6" | "12")}
+                className="bg-gray-600/50 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 cursor-pointer hover:bg-gray-600 transition-colors"
+              >
+                <option value="6">6 Person View (Larger Cards)</option>
+                <option value="12">12 Person View (Smaller Cards)</option>
+              </select>
+            </div>
+          </div>
+
           {/* Device Management */}
           <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 shadow-xl">
             <h2 className="text-2xl font-semibold text-white mb-6 flex items-center">
