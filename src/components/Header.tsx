@@ -1,4 +1,5 @@
 import React from "react";
+import logoUrl from "../../assets/logo.svg";
 import { Settings, X } from "lucide-react";
 
 interface HeaderProps {
@@ -27,7 +28,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSettings }) => {
         {/* Logo */}
         <div className="flex items-center justify-center">
           <div className="bg-gray-700 p-3 rounded-xl">
-            <img src="/assets/logo.svg" alt="Logo" className="w-8 h-8" />
+            <img src={logoUrl} alt="Logo" className="w-8 h-8" />
           </div>
         </div>
 
