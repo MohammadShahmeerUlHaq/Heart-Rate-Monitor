@@ -1,8 +1,10 @@
+const fs = require("fs");
+const path = require("path");
 const Ant = require("ant-plus");
 const { EventEmitter } = require("events");
 const { MockHRMService } = require("./mock-hrm-service");
-const fs = require("fs");
-const path = require("path");
+
+import { TIMING } from "./antplus-constants";
 
 class AntPlusService extends EventEmitter {
   constructor({ mockMode = false } = {}) {
@@ -35,13 +37,14 @@ class AntPlusService extends EventEmitter {
     this.mockService = mockMode ? new MockHRMService() : null;
 
     this.lastConnectionChange = new Map();
-    this.connectionDebounceMs = 2000;
+    this.connectionDebounceMs = TIMING.CONNECTION_DEBOUNCE;
   }
 
-  async startScanning() {
-    if (this.isScanning) {
+  startScanning() {
+    if (this.isScanning || this.stick) {
       return { success: true };
     }
+
     if (this.mockMode && this.mockService) {
       this.mockService.on("heartRateData", (data) =>
         this.emit("heartRateData", data)
@@ -57,13 +60,14 @@ class AntPlusService extends EventEmitter {
       this.isScanning = true;
       return { success: true, mock: true };
     }
+
     try {
       this.stick = new Ant.GarminStick2();
-
       this.stick.on("data", (data) => {
         const eventId = data.toString("hex");
         this.handleRawAntEvent(eventId);
       });
+
       this.stick.on("startup", () => {
         this.isScanning = true;
         for (let i = 0; i < 8; i++) {
@@ -71,10 +75,16 @@ class AntPlusService extends EventEmitter {
         }
         this.startPeriodicUpdates();
       });
+
       this.stick.on("shutdown", () => {
         this.isScanning = false;
       });
+      this.stick.on("error", (error) => {
+        console.error("[AntPlusService] ERROR EVENT RECEIVED:", error);
+      });
+
       const opened = this.stick.open();
+
       if (!opened) {
         throw new Error("ANT_DEVICE_NOT_CONNECTED");
       }
@@ -96,14 +106,8 @@ class AntPlusService extends EventEmitter {
   }
 
   handleRawAntEvent(eventId) {
-    const knownEvents = [
-      "a40340010109ee",
-      "a40340030109ec",
-      "a403400101",
-      "a403400301"
-    ];
-
-    const isKnownEvent = knownEvents.some((known) => eventId.startsWith(known));
+    // All events are handled by the ant-plus library internally
+    // No need to log anything here
   }
 
   addHRSensor(channel) {
@@ -112,11 +116,10 @@ class AntPlusService extends EventEmitter {
     hrSensor.on("hbdata", async (data) => {
       if (!data || typeof data.DeviceID === "undefined") return;
 
-      if (
-        data.DeviceID !== 0 &&
-        !this.activeDevices.has(data.DeviceID.toString())
-      ) {
-        const idStr = data.DeviceID.toString();
+      const idStr = data.DeviceID.toString();
+      const isActive = this.activeDevices.has(idStr);
+
+      if (data.DeviceID !== 0 && !isActive) {
         this.activeDevices.add(idStr);
         try {
           const knownChannel = this.deviceChannelMap.get(idStr);
@@ -141,12 +144,10 @@ class AntPlusService extends EventEmitter {
                 console.error("Failed to save device-channel map:", e);
               }
             } else {
-              try {
-                hrSensor.detach();
-                hrSensor.attach(channel, data.DeviceID);
-              } catch (e) {
-                console.error("Failed to reattach HR sensor:", e);
-              }
+              // Rebind to previous channel failed, keep it on current channel since it's working
+              console.log(
+                `[AntPlusService] Keeping device ${idStr} on current channel ${channel} (rebind to ${knownChannel} failed)`
+              );
               this.deviceChannelMap.set(idStr, channel);
               this.channelSensorMap.set(channel, hrSensor);
               try {
@@ -158,12 +159,10 @@ class AntPlusService extends EventEmitter {
               } catch (e) {}
             }
           } else {
-            try {
-              hrSensor.detach();
-              hrSensor.attach(channel, data.DeviceID);
-            } catch (e) {
-              console.error("Failed to reattach HR sensor:", e);
-            }
+            // Device is already attached and working on this channel, just update mapping
+            console.log(
+              `[AntPlusService] Device ${idStr} connected on channel ${channel} (no rebind needed)`
+            );
             this.deviceChannelMap.set(idStr, channel);
             this.channelSensorMap.set(channel, hrSensor);
             try {
@@ -182,6 +181,10 @@ class AntPlusService extends EventEmitter {
       }
 
       if (data.DeviceID !== 0) {
+        // Ensure device is marked as active - handles out-of-range reconnections
+        if (!isActive) {
+          this.activeDevices.add(idStr);
+        }
         this.handleHeartRateData(data);
       }
     });
@@ -203,14 +206,7 @@ class AntPlusService extends EventEmitter {
 
       if (deviceId) {
         this.handleDeviceDetached(deviceId);
-      } else {
-        try {
-          hrSensor.attach(channel, 0);
-          this.channelSensorMap.set(channel, hrSensor);
-        } catch (e) {
-          console.error("Failed to reattach HR sensor:", e);
-          this.channelSensorMap.delete(channel);
-        }
+        this.activeDevices.delete(deviceId);
       }
     });
 
@@ -396,6 +392,41 @@ class AntPlusService extends EventEmitter {
       clearInterval(this.updateInterval);
     }
 
+    if (this.rescanInterval) {
+      clearInterval(this.rescanInterval);
+    }
+
+    // Periodic rescan for disconnected devices every 5 seconds
+    this.rescanInterval = setInterval(() => {
+      if (this.isShuttingDown) return;
+
+      for (let i = 0; i < this.hrSensors.length; i++) {
+        const sensor = this.hrSensors[i];
+        if (!sensor) continue;
+
+        // Skip rescan on channels that currently have an active device bound
+        const activeDeviceOnChannel = [...this.deviceChannelMap.entries()].find(
+          ([devId, ch]) => ch === i && this.activeDevices.has(devId)
+        );
+        if (activeDeviceOnChannel) continue;
+
+        setTimeout(() => {
+          try {
+            sensor.detach();
+            setTimeout(() => {
+              try {
+                sensor.attach(i, 0);
+              } catch (e) {}
+            }, TIMING.RESCAN_DETACH_DELAY);
+          } catch (e) {
+            try {
+              sensor.attach(i, 0);
+            } catch (e2) {}
+          }
+        }, i * TIMING.RESCAN_CHANNEL_STAGGER);
+      }
+    }, TIMING.RESCAN_INTERVAL);
+
     this.updateInterval = setInterval(() => {
       if (this.isShuttingDown) return;
 
@@ -405,15 +436,19 @@ class AntPlusService extends EventEmitter {
 
       const now = Date.now();
       for (const [deviceId, device] of this.devices.entries()) {
-        if (device.connected && now - device.lastUpdate.getTime() > 15000) {
+        if (
+          device.connected &&
+          now - device.lastUpdate.getTime() > TIMING.DEVICE_TIMEOUT
+        ) {
           const lastChange = this.lastConnectionChange.get(deviceId) || 0;
-          if (now - lastChange > 10000) {
+          if (now - lastChange > TIMING.RECONNECT_VERIFICATION_TIME) {
             device.connected = false;
+            this.activeDevices.delete(deviceId);
             this.debouncedEmitConnectionChange("deviceDisconnected", deviceId);
           }
         }
       }
-    }, 1000);
+    }, TIMING.TIMEOUT_CHECK_INTERVAL);
   }
 
   async stopScanning() {
@@ -428,7 +463,13 @@ class AntPlusService extends EventEmitter {
       clearInterval(this.updateInterval);
       this.updateInterval = null;
     }
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    if (this.rescanInterval) {
+      clearInterval(this.rescanInterval);
+      this.rescanInterval = null;
+    }
+    await new Promise((resolve) =>
+      setTimeout(resolve, TIMING.PRE_SHUTDOWN_DELAY)
+    );
     const detachPromises = this.hrSensors.map(async (sensor, index) => {
       try {
         await new Promise((resolve) => {
@@ -449,7 +490,9 @@ class AntPlusService extends EventEmitter {
     this.activeDevices.clear();
     if (this.stick) {
       try {
-        await new Promise((resolve) => setTimeout(resolve, 200));
+        await new Promise((resolve) =>
+          setTimeout(resolve, TIMING.SHUTDOWN_DELAY)
+        );
         this.stick.close();
       } catch (error) {}
       this.stick = null;
