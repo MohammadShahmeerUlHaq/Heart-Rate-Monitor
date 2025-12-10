@@ -1,27 +1,29 @@
-import * as fs from "fs";
-import { exec } from "child_process";
+import { copyFileSync, mkdirSync, existsSync } from "fs";
+import { join } from "path";
 
-const execAsync = (command) => {
-  return new Promise((resolve, reject) => {
-    exec(command, (error, stdout, stderr) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve({ stdout, stderr });
-    });
-  });
-};
+const electronDir = "electron";
+const distDir = "dist";
 
-async function buildElectron() {
-  try {
-    await execAsync("npm run build");
-    await execAsync("cd electron && npm run build");
-    fs.copyFileSync("electron/preload.ts", "dist/preload.js");
-  } catch (error) {
-    console.error("Build failed:", error);
-    process.exit(1);
-  }
+// Ensure dist directory exists
+if (!existsSync(distDir)) {
+  mkdirSync(distDir);
 }
 
-buildElectron();
+try {
+  // Copy main.js
+  const mainSource = join(electronDir, "main.js");
+  const mainDest = join(distDir, "main.js");
+  copyFileSync(mainSource, mainDest);
+  console.log("✔ Copied main.js");
+
+  // Copy preload.js (JS, NOT TS)
+  const preloadSource = join(electronDir, "preload.js");
+  const preloadDest = join(distDir, "preload.js");
+  copyFileSync(preloadSource, preloadDest);
+  console.log("✔ Copied preload.js");
+
+  console.log("Electron JS files copied successfully.");
+} catch (err) {
+  console.error("Build failed:", err);
+  process.exit(1);
+}

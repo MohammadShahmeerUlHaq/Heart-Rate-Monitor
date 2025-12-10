@@ -71,23 +71,33 @@
   "build": {
     "files": [
       "dist/**/*",
-      "electron/**/*",
-      "node_modules/**/*"
+      "electron/**/*"
     ],
     "win": {
       "sign": false,
-      "forceCodeSigning": false,
-      "verifyUpdateCodeSignature": false,
-      "publisherName": null
+      "publisherName": null,
+      "forceCodeSigning": false
     },
     "mac": {
-      "identity": null,
-      "hardenedRuntime": false
+      "identity": null
     },
     "linux": {
       "category": "Utility"
     },
-    "extraResources": [],
+    "extraResources": [
+      {
+        "from": "electron/node_modules/ant-plus",
+        "to": "node_modules/ant-plus"
+      },
+      {
+        "from": "electron/node_modules/usb",
+        "to": "node_modules/usb"
+      },
+      {
+        "from": "electron/node_modules/node-gyp-build",
+        "to": "node_modules/node-gyp-build"
+      }
+    ],
     "directories": {
       "output": "release"
     }

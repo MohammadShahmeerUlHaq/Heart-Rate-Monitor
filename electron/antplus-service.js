@@ -4,7 +4,17 @@ const Ant = require("ant-plus");
 const { EventEmitter } = require("events");
 const { MockHRMService } = require("./mock-hrm-service");
 
-import { TIMING } from "./antplus-constants";
+const TIMING = {
+  RESCAN_INTERVAL: 5000,
+  RESCAN_DETACH_DELAY: 100,
+  RESCAN_CHANNEL_STAGGER: 50,
+  DEVICE_TIMEOUT: 15000,
+  CONNECTION_DEBOUNCE: 2000,
+  TIMEOUT_CHECK_INTERVAL: 1000,
+  SHUTDOWN_DELAY: 200,
+  PRE_SHUTDOWN_DELAY: 100,
+  RECONNECT_VERIFICATION_TIME: 10000
+};
 
 class AntPlusService extends EventEmitter {
   constructor({ mockMode = false } = {}) {
@@ -105,10 +115,7 @@ class AntPlusService extends EventEmitter {
     }
   }
 
-  handleRawAntEvent(eventId) {
-    // All events are handled by the ant-plus library internally
-    // No need to log anything here
-  }
+  handleRawAntEvent(eventId) {}
 
   addHRSensor(channel) {
     const hrSensor = new Ant.HeartRateSensor(this.stick);
@@ -144,7 +151,6 @@ class AntPlusService extends EventEmitter {
                 console.error("Failed to save device-channel map:", e);
               }
             } else {
-              // Rebind to previous channel failed, keep it on current channel since it's working
               console.log(
                 `[AntPlusService] Keeping device ${idStr} on current channel ${channel} (rebind to ${knownChannel} failed)`
               );
@@ -159,7 +165,6 @@ class AntPlusService extends EventEmitter {
               } catch (e) {}
             }
           } else {
-            // Device is already attached and working on this channel, just update mapping
             console.log(
               `[AntPlusService] Device ${idStr} connected on channel ${channel} (no rebind needed)`
             );
@@ -181,7 +186,6 @@ class AntPlusService extends EventEmitter {
       }
 
       if (data.DeviceID !== 0) {
-        // Ensure device is marked as active - handles out-of-range reconnections
         if (!isActive) {
           this.activeDevices.add(idStr);
         }
@@ -396,7 +400,6 @@ class AntPlusService extends EventEmitter {
       clearInterval(this.rescanInterval);
     }
 
-    // Periodic rescan for disconnected devices every 5 seconds
     this.rescanInterval = setInterval(() => {
       if (this.isShuttingDown) return;
 
@@ -404,7 +407,6 @@ class AntPlusService extends EventEmitter {
         const sensor = this.hrSensors[i];
         if (!sensor) continue;
 
-        // Skip rescan on channels that currently have an active device bound
         const activeDeviceOnChannel = [...this.deviceChannelMap.entries()].find(
           ([devId, ch]) => ch === i && this.activeDevices.has(devId)
         );

@@ -5,8 +5,8 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "tsc -p .",
-    "rebuild": "electron-rebuild"
+    "rebuild": "electron-rebuild",
+    "build": "echo Nothing to build — JS only"
   },
   "dependencies": {
     "@types/nodemailer": "^7.0.1",
