@@ -75,10 +75,10 @@
       "node_modules/**/*"
     ],
     "win": {
-      "sign": false,
-      "forceCodeSigning": false,
-      "verifyUpdateCodeSignature": false,
-      "publisherName": null
+      "sign": null,
+      "target": "nsis",
+      "signingHashAlgorithms": [],
+      "verifyUpdateCodeSignature": false
     },
     "mac": {
       "identity": null,
@@ -90,6 +90,7 @@
     "extraResources": [],
     "directories": {
       "output": "release"
-    }
+    },
+    "electronVersion": "28.3.3"
   }
 }

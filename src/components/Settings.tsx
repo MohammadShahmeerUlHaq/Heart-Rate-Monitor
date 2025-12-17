@@ -42,6 +42,12 @@ export const Settings: React.FC<SettingsProps> = ({
     return saved === "6" || saved === "12" ? saved : "12";
   });
 
+  const [showConnectionIndicator, setShowConnectionIndicator] =
+    useState<boolean>(() => {
+      const saved = localStorage.getItem("showConnectionIndicator");
+      return saved !== "false"; // Default to true
+    });
+
   // Initialize (or merge) settings only once
   useEffect(() => {
     if (initialized.current) return; // <-- prevent overwriting live edits
@@ -134,6 +140,10 @@ export const Settings: React.FC<SettingsProps> = ({
         JSON.stringify(localSettings)
       );
       localStorage.setItem("viewMode", viewMode);
+      localStorage.setItem(
+        "showConnectionIndicator",
+        String(showConnectionIndicator)
+      );
     } catch (e) {
       console.warn("Failed to persist participantSettings:", e);
     }
@@ -174,16 +184,37 @@ export const Settings: React.FC<SettingsProps> = ({
               <Monitor className="w-6 h-6 mr-3 text-blue-400" />
               Display Settings
             </h2>
-            <div className="flex items-center space-x-4">
-              <label className="text-gray-300 font-medium">View Mode:</label>
-              <select
-                value={viewMode}
-                onChange={(e) => setViewMode(e.target.value as "6" | "12")}
-                className="bg-gray-600/50 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 cursor-pointer hover:bg-gray-600 transition-colors"
-              >
-                <option value="6">6 Person View (Larger Cards)</option>
-                <option value="12">12 Person View (Smaller Cards)</option>
-              </select>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <label className="text-gray-300 font-medium">View Mode:</label>
+                <select
+                  value={viewMode}
+                  onChange={(e) => setViewMode(e.target.value as "6" | "12")}
+                  className="bg-gray-600/50 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 cursor-pointer hover:bg-gray-600 transition-colors"
+                >
+                  <option value="6">6 Person View (Larger Cards)</option>
+                  <option value="12">12 Person View (Smaller Cards)</option>
+                </select>
+              </div>
+              <div className="flex items-center space-x-4">
+                <label className="text-gray-300 font-medium">
+                  Connection Indicator:
+                </label>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showConnectionIndicator}
+                    onChange={(e) =>
+                      setShowConnectionIndicator(e.target.checked)
+                    }
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  <span className="ml-3 text-sm font-medium text-gray-300">
+                    {showConnectionIndicator ? "Show" : "Hide"}
+                  </span>
+                </label>
+              </div>
             </div>
           </div>
 

@@ -39,13 +39,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
     new Map()
   );
   const [viewMode, setViewMode] = useState<"6" | "12">("12");
+  const [showConnectionIndicator, setShowConnectionIndicator] =
+    useState<boolean>(true);
 
-  // Load view mode from localStorage
+  // Load view mode and connection indicator from localStorage
   useEffect(() => {
     const saved = localStorage.getItem("viewMode");
     if (saved === "6" || saved === "12") {
       setViewMode(saved);
     }
+
+    const savedIndicator = localStorage.getItem("showConnectionIndicator");
+    setShowConnectionIndicator(savedIndicator !== "false");
 
     // Listen for storage changes (when Settings saves)
     const handleStorageChange = () => {
@@ -53,6 +58,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
       if (updated === "6" || updated === "12") {
         setViewMode(updated);
       }
+
+      const updatedIndicator = localStorage.getItem("showConnectionIndicator");
+      setShowConnectionIndicator(updatedIndicator !== "false");
     };
 
     window.addEventListener("storage", handleStorageChange);
@@ -62,6 +70,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
       if (updated === "6" || updated === "12") {
         setViewMode(updated);
       }
+
+      const updatedIndicator = localStorage.getItem("showConnectionIndicator");
+      setShowConnectionIndicator(updatedIndicator !== "false");
     }, 500);
 
     return () => {
@@ -139,9 +150,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
         sessionStats={userStats.get(device.id)}
         isSessionActive={isSessionActive}
         viewMode={viewMode}
+        showConnectionIndicator={showConnectionIndicator}
       />
     ));
-  }, [devices, userStats, isSessionActive, viewMode]);
+  }, [devices, userStats, isSessionActive, viewMode, showConnectionIndicator]);
 
   if (devices.length === 0) {
     return (

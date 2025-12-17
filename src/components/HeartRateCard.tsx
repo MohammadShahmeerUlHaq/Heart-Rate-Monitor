@@ -13,13 +13,15 @@ interface HeartRateCardProps {
   sessionStats?: UserSessionStats;
   isSessionActive?: boolean;
   viewMode?: "6" | "12";
+  showConnectionIndicator?: boolean;
 }
 
 export const HeartRateCard: React.FC<HeartRateCardProps> = ({
   device,
   sessionStats,
   isSessionActive = false,
-  viewMode = "12"
+  viewMode = "12",
+  showConnectionIndicator = true
 }) => {
   const [maxHeartRate, setMaxHeartRate] = useState(0);
 
@@ -86,13 +88,15 @@ export const HeartRateCard: React.FC<HeartRateCardProps> = ({
       `}
     >
       {/* Connection Status */}
-      <div className="absolute top-4 right-4">
-        {device.connected && !isStale ? (
-          <Wifi className={`${sizes.wifiIcon} text-green-400`} />
-        ) : (
-          <WifiOff className={`${sizes.wifiIcon} text-gray-500`} />
-        )}
-      </div>
+      {showConnectionIndicator && (
+        <div className="absolute top-4 right-4">
+          {device.connected && !isStale ? (
+            <Wifi className={`${sizes.wifiIcon} text-green-400`} />
+          ) : (
+            <WifiOff className={`${sizes.wifiIcon} text-gray-500`} />
+          )}
+        </div>
+      )}
 
       {/* Content Container */}
       <div className="p-6 flex flex-col h-full">
